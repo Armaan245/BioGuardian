@@ -78,5 +78,55 @@ cd BioGuardian
 
 pip install -r software/pi_zero/requirements.txt
 
-###Generate Synthetic Sensor Data (Phase 1)
+Generate Synthetic Sensor Data (Phase 1)
+
 python software/pi_zero/simulate_sensor_data.py
+
+Train Feature Engineering Model (Phase 2)
+
+python software/pi_zero/train_model.py
+
+Compile and Run C++ Edge AI Engine (Phase 3)
+
+# Set PATH for current session if using MinGW on Windows
+$env:Path += ";C:\msys64\ucrt64\bin"
+
+# Compile and run engine
+cd software/pi_zero
+g++ -O2 -std=c++17 main.cpp -o pi_zero_edge_ai
+.\pi_zero_edge_ai.exe
+
+Run OpenCV Vision & Telemetry Pipeline (Phases 4 & 5)
+
+python software/vision/bubble_sizer.py
+python software/vision/telemetry_publisher.py
+
+📊 Telemetry Output Example
+
+{
+  "timestamp_utc": "2026-09-09T18:50:54Z",
+  "device_id": "BioGuardian-PiZero-01",
+  "event": "BUBBLE_ALERT",
+  "inference_metrics": {
+    "model_version": "v1.0-mlp-int8",
+    "prediction": "BUBBLE_RISK",
+    "confidence": 0.98,
+    "latency_ms": 0.0001
+  },
+  "vision_metrics": {
+    "diameter_mm": 0.6,
+    "volume_uL": 0.1131,
+    "category": "SHEARING_BUBBLE",
+    "risk_level": "HIGH_RISK",
+    "action": "ALERT_PREPARE_PURGE_VALVE"
+  },
+  "sensor_snapshot": {
+    "pressure_mbar": 980.0,
+    "flow_uL_min": 410.0,
+    "ir_transmittance_mv": 480.0,
+    "temperature_c": 25.6
+  }
+}
+
+
+
