@@ -127,6 +127,3 @@ python software/vision/telemetry_publisher.py
     "temperature_c": 25.6
   }
 }
-
-
-
