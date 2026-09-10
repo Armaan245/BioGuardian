@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioGuardian Digital Twin - 3D Real-Time Microfluidic Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js Library & Controls via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <!-- 3D Three.js WebGL Canvas Layer -->
+  <div id="canvas-container"></div>
+
+  <!-- Real-Time UI HUD Overlay -->
+  <div class="dashboard-ui">
+    <!-- Top Section (Header + Metrics Grid) -->
+    <div class="top-section">
+      <!-- Top Navigation Bar -->
+      <header class="top-bar interactive-panel">
+        <div class="brand-section">
+          <div class="brand-logo-badge">BG</div>
+          <div class="brand-titles">
+            <h1>BioGuardian Digital Twin</h1>
+            <div class="sub-tag">Microfluidic Physics Engine & Edge AI Monitor</div>
+          </div>
+        </div>
+
+        <div class="status-badges">
+          <div class="pill-badge" id="badge-device">
+            <span>DEV:</span>
+            <strong id="device-id-val" style="color: var(--accent-cyan)">BioGuardian-PiZero-01</strong>
+          </div>
+          <div class="pill-badge">
+            <div class="pulse-dot" id="ws-status-dot"></div>
+            <span id="ws-status-text">WS: CONNECTED (8080)</span>
+          </div>
+          <div class="pill-badge">
+            <span style="color: var(--text-dim)">UTC:</span>
+            <span id="live-utc-clock" style="font-family: var(--font-mono)">--:--:--</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Top Floating Metric Cards -->
+      <section class="cards-grid interactive-panel">
+        <!-- Pressure Card -->
+        <div class="metric-card" id="card-pressure">
+          <div class="metric-header">
+            <span class="metric-label">Hydrostatic Pressure</span>
+            <span class="metric-icon">🌊</span>
+          </div>
+          <div class="metric-value-container">
+            <span class="metric-value" id="val-pressure">980.0</span>
+            <span class="metric-unit">mbar</span>
+          </div>
+          <div class="metric-sub">
+            <span>Theory: <span id="val-theory-p">5.09</span> mbar</span>
+            <span>IR: <span id="val-ir">480</span> mV</span>
+          </div>
+        </div>
+
+        <!-- Flow Rate Card -->
+        <div class="metric-card" id="card-flow">
+          <div class="metric-header">
+            <span class="metric-label">Volumetric Flow</span>
+            <span class="metric-icon">⚡</span>
+          </div>
+          <div class="metric-value-container">
+            <span class="metric-value" id="val-flow">400.0</span>
+            <span class="metric-unit">μL/min</span>
+          </div>
+          <div class="metric-sub">
+            <span>Q (m³/s): <span id="val-flow-si">6.67e-9</span></span>
+            <span>Temp: <span id="val-temp">25.0</span>°C</span>
+          </div>
+        </div>
+
+        <!-- Edge AI Classification Card -->
+        <div class="metric-card" id="card-edge-ai">
+          <div class="metric-header">
+            <span class="metric-label">Edge AI Inference</span>
+            <span class="metric-icon">🧠</span>
+          </div>
+          <div class="metric-value-container" style="margin-top: 4px;">
+            <span class="status-pill status-nominal" id="val-prediction">NOMINAL</span>
+          </div>
+          <div class="metric-sub">
+            <span>Confidence: <strong id="val-confidence" style="color: #fff">98.5%</strong></span>
+            <span>Latency: <span id="val-latency">85</span> μs</span>
+          </div>
+        </div>
+
+        <!-- Physics Channel Health Card -->
+        <div class="metric-card" id="card-channel-health">
+          <div class="metric-header">
+            <span class="metric-label">Microchannel Health</span>
+            <span class="metric-icon">🔬</span>
+          </div>
+          <div class="metric-value-container">
+            <span class="metric-value" id="val-health-score" style="color: var(--accent-emerald)">100%</span>
+            <span class="metric-unit">HEALTH</span>
+          </div>
+          <div class="metric-sub">
+            <span>Status: <strong id="val-health-status" style="color: var(--accent-emerald)">NOMINAL</strong></span>
+            <span>ΔP Dev: <span id="val-deviation">0.2%</span></span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+
+    <!-- Bottom Readout & Control Bar -->
+    <footer class="bottom-bar interactive-panel">
+      <!-- Spatial Vision Optical Metrics -->
+      <div class="vision-readout-panel">
+        <div class="panel-title">
+          <span>Optical Spatial Vision Readout</span>
+          <span id="vision-detection-badge" class="status-pill status-nominal" style="font-size: 11px;">NO BUBBLE</span>
+        </div>
+        <div class="vision-metrics-row">
+          <div class="mini-stat">
+            <span class="mini-stat-title">Diameter</span>
+            <span class="mini-stat-value"><span id="val-bubble-diameter">0.00</span> <small style="font-size: 10px; color: var(--accent-cyan)">mm</small></span>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-stat-title">Volume</span>
+            <span class="mini-stat-value"><span id="val-bubble-volume">0.000</span> <small style="font-size: 10px; color: var(--accent-cyan)">μL</small></span>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-stat-title">X-Position</span>
+            <span class="mini-stat-value"><span id="val-bubble-pos">0.00</span> <small style="font-size: 10px; color: var(--accent-cyan)">mm</small></span>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-stat-title">FPS / Rate</span>
+            <span class="mini-stat-value" style="color: var(--accent-emerald)">60 <small style="font-size: 10px">Hz</small></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Interactive Simulation Controls -->
+      <div class="simulation-actions">
+        <button class="btn-action" id="btn-inject-nominal" title="Inject nominal telemetry packet">
+          <span>🟢</span> Nominal Pulse
+        </button>
+        <button class="btn-action btn-danger" id="btn-inject-bubble" title="Inject bubble alert telemetry packet">
+          <span>🔴</span> Bubble Risk Spike
+        </button>
+        <button class="btn-action" id="btn-reset-cam" title="Reset 3D camera orientation">
+          <span>🔄</span> Reset Camera
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Dashboard 3D Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
