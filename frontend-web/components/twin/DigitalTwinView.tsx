@@ -11,12 +11,22 @@ import { DigitalTwinHUD } from './DigitalTwinHUD';
 import { TelemetryDrawers } from './TelemetryDrawers';
 import { TelemetryProvider } from '@/lib/telemetry/TelemetryContext';
 
-function DigitalTwinViewContent() {
+interface DigitalTwinViewProps {
+  fullscreen?: boolean;
+}
+
+function DigitalTwinViewContent({ fullscreen = false }: DigitalTwinViewProps) {
   const [telemetryDrawerOpen, setTelemetryDrawerOpen] = useState(false);
   const [bubbleDrawerOpen, setBubbleDrawerOpen] = useState(false);
 
   return (
-    <div className="relative w-full h-full min-h-[600px] lg:min-h-[720px] rounded-3xl overflow-hidden border border-teal/20 shadow-2xl bg-[#060a12]">
+    <div
+      className={`relative w-full h-full flex-1 flex flex-col overflow-hidden bg-[#060a12] ${
+        fullscreen
+          ? 'min-h-0 rounded-none border-0 shadow-none'
+          : 'min-h-[600px] lg:min-h-[720px] rounded-3xl border border-teal/20 shadow-2xl'
+      }`}
+    >
       {/* 1. 3D WebGL Canvas Layer */}
       <DigitalTwinCanvas />
 
@@ -39,10 +49,10 @@ function DigitalTwinViewContent() {
   );
 }
 
-export function DigitalTwinView() {
+export function DigitalTwinView({ fullscreen = false }: DigitalTwinViewProps) {
   return (
     <TelemetryProvider>
-      <DigitalTwinViewContent />
+      <DigitalTwinViewContent fullscreen={fullscreen} />
     </TelemetryProvider>
   );
 }

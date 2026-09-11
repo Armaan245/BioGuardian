@@ -61,7 +61,7 @@ export function DigitalTwinCanvas() {
       0.1,
       1000
     );
-    camera.position.set(0, 22, 60);
+    camera.position.set(-2, 10, 44);
 
     // High-Fidelity WebGL Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -74,17 +74,17 @@ export function DigitalTwinCanvas() {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     container.appendChild(renderer.domElement);
 
     // Orbit Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.minDistance = 14;
+    controls.minDistance = 10;
     controls.maxDistance = 140;
     controls.maxPolarAngle = Math.PI / 2 + 0.05;
-    controls.target.set(0, 0, 0);
+    controls.target.set(-2, 0, 0);
 
     // ==========================================
     // 2. STUDIO LABORATORY LIGHTING RIG
@@ -129,9 +129,9 @@ export function DigitalTwinCanvas() {
     // ==========================================
     const stageGroup = new THREE.Group();
 
-    // Solid Brushed Aluminum Breadboard Plate
-    const breadboardWidth = 120;
-    const breadboardDepth = 60;
+    // Solid Brushed Aluminum Optical Isolation Breadboard Plate
+    const breadboardWidth = 190;
+    const breadboardDepth = 110;
     const breadboardThickness = 2.5;
     const breadboardGeo = new THREE.BoxGeometry(breadboardWidth, breadboardThickness, breadboardDepth);
     const breadboardMat = new THREE.MeshStandardMaterial({
@@ -156,14 +156,14 @@ export function DigitalTwinCanvas() {
     stageGroup.add(rimMesh);
 
     // Subtle M6 Optical Grid Pattern on stage
-    const gridHelper = new THREE.GridHelper(breadboardWidth - 8, 30, 0x38bdf8, 0x334155);
+    const gridHelper = new THREE.GridHelper(breadboardWidth - 8, 38, 0x38bdf8, 0x334155);
     gridHelper.position.y = -7.95;
     stageGroup.add(gridHelper);
 
     // Stainless Steel Vibration Isolation Mounting Posts
-    [-48, 48].forEach((posX) => {
-      [-22, 22].forEach((posZ) => {
-        const footGeo = new THREE.CylinderGeometry(2.4, 2.6, 3, 24);
+    [-80, 80].forEach((posX) => {
+      [-44, 44].forEach((posZ) => {
+        const footGeo = new THREE.CylinderGeometry(3.0, 3.4, 3, 24);
         const footMat = new THREE.MeshStandardMaterial({
           color: 0x94a3b8,
           metalness: 0.95,
@@ -174,6 +174,23 @@ export function DigitalTwinCanvas() {
         stageGroup.add(foot);
       });
     });
+
+    // Extensive Laboratory Isolation Bench Floor (eliminates bottom cut-offs)
+    const floorGeo = new THREE.PlaneGeometry(800, 800);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x080f1e,
+      roughness: 0.5,
+      metalness: 0.7,
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -12.5;
+    floor.receiveShadow = true;
+    stageGroup.add(floor);
+
+    const labGrid = new THREE.GridHelper(600, 60, 0x1e293b, 0x0f172a);
+    labGrid.position.y = -12.45;
+    stageGroup.add(labGrid);
 
     scene.add(stageGroup);
 
@@ -724,12 +741,12 @@ export function DigitalTwinCanvas() {
     let clock = new THREE.Clock();
     let bubbleLocalX = -36;
 
-    // Corrected camera presets giving unobstructed, photorealistic angles
+    // Perfectly centered & framed camera presets filling 100% of the screen
     const PRESETS = {
-      FULL_SYSTEM: { pos: new THREE.Vector3(0, 22, 60), target: new THREE.Vector3(0, 0, 0) },
-      // Elevated diagonal angle showing tube, fluid, and optical sensor lens looking in:
-      INLET_OBSERVATION: { pos: new THREE.Vector3(-18, 11, 27), target: new THREE.Vector3(-19, 1.5, 0) },
-      ORGAN_ON_CHIP: { pos: new THREE.Vector3(chipCenterX + 2, 14, 30), target: new THREE.Vector3(chipCenterX, 0, 0) },
+      FULL_SYSTEM: { pos: new THREE.Vector3(-2, 10, 44), target: new THREE.Vector3(-2, 0, 0) },
+      // Balanced eye-level observation angle directly centering the tube, sensor clamp & bubble detection
+      INLET_OBSERVATION: { pos: new THREE.Vector3(-18, 3, 21), target: new THREE.Vector3(-18, 0, 0) },
+      ORGAN_ON_CHIP: { pos: new THREE.Vector3(chipCenterX, 5, 22), target: new THREE.Vector3(chipCenterX, 0, 0) },
     };
 
     const animate = () => {
@@ -842,13 +859,23 @@ export function DigitalTwinCanvas() {
 
     const handleResize = () => {
       if (!container) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || window.innerHeight;
+      if (width > 0 && height > 0) {
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      }
     };
     window.addEventListener('resize', handleResize);
 
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    resizeObserver.observe(container);
+
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       domElement.removeEventListener('pointerdown', handlePointerDown);
       cancelAnimationFrame(animationFrameId);
@@ -861,7 +888,7 @@ export function DigitalTwinCanvas() {
   }, []);
 
   return (
-    <div className="relative w-full h-full min-h-[500px] overflow-hidden bg-[#0a1120] select-none">
+    <div className="relative w-full h-full flex-1 min-h-0 overflow-hidden bg-[#0a1120] select-none">
       <div ref={containerRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
     </div>
   );

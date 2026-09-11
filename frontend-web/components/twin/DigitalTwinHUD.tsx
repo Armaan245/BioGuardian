@@ -11,7 +11,7 @@
  * - Display Modes: Standard HUD, Clean 3D, Presentation Mode
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Activity,
   AlertOctagon,
@@ -70,6 +70,24 @@ export function DigitalTwinHUD({
   const probPercent = Math.round(telemetry.bubble_probability * 100);
   const isBubbleDetected = telemetry.bubble_detected;
   const isHighRisk = isBubbleDetected || probPercent > 75;
+
+  const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsBrowserFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleBrowserFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  };
 
   // ==========================================
   // PRESENTATION MODE (Minimalist Clean Showcase)
@@ -408,6 +426,25 @@ export function DigitalTwinHUD({
           >
             <Tv className="size-3.5 text-teal" />
             <span>Presentation</span>
+          </button>
+
+          {/* Browser Fullscreen Toggle */}
+          <button
+            onClick={toggleBrowserFullscreen}
+            className="px-3 py-2 rounded-xl bg-[#090e1a]/85 border border-teal/20 hover:border-teal/40 text-slate-300 hover:text-white text-xs font-medium backdrop-blur-md shadow-lg transition flex items-center gap-1.5"
+            title={isBrowserFullscreen ? "Exit Fullscreen" : "Expand to Fullscreen"}
+          >
+            {isBrowserFullscreen ? (
+              <>
+                <Minimize2 className="size-3.5 text-teal" />
+                <span>Exit Full</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="size-3.5 text-teal" />
+                <span>Fullscreen</span>
+              </>
+            )}
           </button>
         </div>
       </div>
