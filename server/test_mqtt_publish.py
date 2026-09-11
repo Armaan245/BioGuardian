@@ -16,7 +16,10 @@ BROKER_PORT = 1883
 TOPIC = "bioguardian/devices/BG-ESP32-001/telemetry"
 
 def main():
-    client = mqtt.Client(client_id="BioGuardian-Sensor-Test-Script")
+    try:
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="BioGuardian-Sensor-Test-Script")
+    except (AttributeError, TypeError):
+        client = mqtt.Client(client_id="BioGuardian-Sensor-Test-Script")
     print(f"Connecting to MQTT broker at {BROKER_HOST}:{BROKER_PORT}...")
     try:
         client.connect(BROKER_HOST, BROKER_PORT, 60)
