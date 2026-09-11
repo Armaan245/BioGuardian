@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { DigitalTwinCanvas } from './DigitalTwinCanvas';
 import { DigitalTwinHUD } from './DigitalTwinHUD';
+import { DigitalTwinZoomControl } from './DigitalTwinZoomControl';
 import { TelemetryDrawers } from './TelemetryDrawers';
 import { TelemetryProvider } from '@/lib/telemetry/TelemetryContext';
 
@@ -45,6 +46,11 @@ function DigitalTwinViewContent({ fullscreen = false }: DigitalTwinViewProps) {
         bubbleDrawerOpen={bubbleDrawerOpen}
         setBubbleDrawerOpen={setBubbleDrawerOpen}
       />
+
+      {/* 4. On-Screen Precision Smooth Zoom Controller */}
+      <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-30 pointer-events-auto">
+        <DigitalTwinZoomControl />
+      </div>
     </div>
   );
 }

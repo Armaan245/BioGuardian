@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Eye,
+  Info,
   Layers,
   Maximize2,
   Minimize2,
@@ -58,6 +59,8 @@ export function DigitalTwinHUD({
     setCameraPreset,
     viewMode,
     setViewMode,
+    inspectionTarget,
+    setInspectionTarget,
     triggerBubbleAlert,
     clearBubbleAlert,
     triggerBubbleSpot,
@@ -239,7 +242,7 @@ export function DigitalTwinHUD({
             <div className="flex items-center gap-2">
               {!showBubbleSpotVisual && !isBubbleDetected ? (
                 <button
-                  onClick={() => triggerBubbleSpot(true)}
+                  onClick={() => triggerBubbleSpot(false)}
                   className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 transition flex items-center gap-1.5 shadow-sm"
                   title="Spot air bubble at optical inspection zone"
                 >
@@ -322,6 +325,42 @@ export function DigitalTwinHUD({
               <div className="text-xs font-semibold text-emerald-400">ONLINE</div>
             </div>
           </div>
+
+          {/* Card 4: Mini Node / Component Inspection */}
+          <button
+            onClick={() => {
+              if (inspectionTarget) {
+                setInspectionTarget(null);
+              } else {
+                setInspectionTarget(cameraPreset === 'INLET_OBSERVATION' ? 'INLET_OBSERVATION' : 'ORGAN_ON_CHIP');
+              }
+            }}
+            title={inspectionTarget ? 'Close component details popup' : 'View component inspection details'}
+            className={`bg-[#090e1a]/85 backdrop-blur-md border px-3 py-2 rounded-xl shadow-lg flex items-center gap-2.5 transition text-left cursor-pointer ${
+              inspectionTarget
+                ? 'border-teal bg-teal/15 text-white shadow-teal/20 ring-1 ring-teal/40'
+                : 'border-teal/20 hover:border-teal/50 hover:bg-white/5 text-slate-300'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${inspectionTarget ? 'bg-teal text-black' : 'bg-teal/10 text-teal'}`}>
+              <Info className="size-3.5" />
+            </div>
+            <div>
+              <div className="text-[9px] uppercase font-mono tracking-wider text-slate-400">INSPECT</div>
+              <div className="text-xs font-bold font-mono text-white">
+                {inspectionTarget ? (inspectionTarget === 'ORGAN_ON_CHIP' ? 'CHIP' : 'INLET') : 'NODE'}
+              </div>
+            </div>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
+                inspectionTarget
+                  ? 'bg-teal/20 text-teal border-teal/40'
+                  : 'bg-white/5 text-slate-400 border-white/10'
+              }`}
+            >
+              {inspectionTarget ? 'OPEN' : 'VIEW'}
+            </span>
+          </button>
         </div>
       </div>
 

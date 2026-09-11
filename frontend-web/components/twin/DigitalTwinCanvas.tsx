@@ -24,7 +24,6 @@ export function DigitalTwinCanvas() {
     telemetry,
     cameraPreset,
     setCameraPreset,
-    setInspectionTarget,
     showBubbleSpotVisual,
   } = useTelemetry();
 
@@ -479,27 +478,95 @@ export function DigitalTwinCanvas() {
     scene.add(bubbleMesh);
 
     // ==========================================
-    // 7. DETAILED ORGAN-ON-CHIP (PDMS & Glass)
+    // 7. REAL SCIENTIFIC DUAL-LAYER ORGAN-ON-CHIP
+    // (Matching Wyss Institute / Standard OOC Architecture)
+    // - Borosilicate Microscope Slide Glass Base (76mm x 26mm format)
+    // - Optically Clear PDMS Elastomeric Polymer Block
+    // - Upper Microchannel (Blue - Apical / Epithelial / Treatment)
+    // - Micro-Porous Permeable Membrane (Central Cell-Culture Interface)
+    // - Lower Microchannel (Peach/Orange - Endothelial / Vascular Shear Flow)
+    // - Dual Side Vacuum Chambers (Cyclic Physiological Breathing / Peristalsis)
     // ==========================================
     const oocGroup = new THREE.Group();
     oocGroup.name = 'ORGAN_ON_CHIP';
 
-    const chipWidth = 36;
-    const chipHeight = 5.2;
-    const chipDepth = 22;
-    const chipCenterX = chipWidth / 2; // ~18.0
+    const chipWidth = 40;
+    const chipHeight = 5.4;
+    const chipDepth = 20;
+    const chipCenterX = 21.0;
 
-    // Transparent PDMS Chip Body (Ultra-clear scientific polymer)
+    // A. Procedural Micro-Porous Membrane Texture (Porous grid array)
+    const createPorousMembraneTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      // Pearlescent membrane sheet
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, 512, 256);
+
+      // Microscopic pore matrix (regular micro-apertures)
+      ctx.fillStyle = '#1e293b';
+      const poreStep = 8;
+      const poreRad = 1.5;
+      for (let px = 4; px < 512; px += poreStep) {
+        for (let py = 4; py < 256; py += poreStep) {
+          ctx.beginPath();
+          ctx.arc(px, py, poreRad, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(3, 1.5);
+      return tex;
+    };
+    const membraneTexture = createPorousMembraneTexture();
+
+    // B. Standard 76mm x 26mm Borosilicate Microscope Slide Base
+    const slideBaseGeo = new THREE.BoxGeometry(chipWidth + 10, 1.2, chipDepth + 4);
+    const slideBaseMat = new THREE.MeshPhysicalMaterial({
+      color: 0xecfdf5,
+      transmission: 0.95,
+      roughness: 0.04,
+      metalness: 0.08,
+      ior: 1.515,
+      transparent: true,
+      opacity: 0.65,
+      depthWrite: false,
+    });
+    const slideBaseMesh = new THREE.Mesh(slideBaseGeo, slideBaseMat);
+    slideBaseMesh.position.set(chipCenterX, -chipHeight / 2 - 0.6, 0);
+    slideBaseMesh.receiveShadow = true;
+    oocGroup.add(slideBaseMesh);
+
+    // Frosted label area on microscope slide edge (scientific detail)
+    const frostedLabelGeo = new THREE.BoxGeometry(8.5, 1.25, chipDepth + 3.8);
+    const frostedLabelMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc,
+      roughness: 0.85,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.75,
+    });
+    const frostedLabel = new THREE.Mesh(frostedLabelGeo, frostedLabelMat);
+    frostedLabel.position.set(chipCenterX + chipWidth / 2 + 1.5, -chipHeight / 2 - 0.6, 0);
+    oocGroup.add(frostedLabel);
+
+    // C. Ultra-Clear Optical PDMS Elastomer Body
     const chipBodyGeo = new THREE.BoxGeometry(chipWidth, chipHeight, chipDepth);
     const chipBodyMat = new THREE.MeshPhysicalMaterial({
       color: 0xf0fdfa,
-      transmission: 0.95,
-      roughness: 0.05,
-      metalness: 0.04,
-      ior: 1.48,
-      thickness: 4.0,
+      transmission: 0.97,
+      roughness: 0.03,
+      metalness: 0.02,
+      ior: 1.43,
       transparent: true,
-      opacity: 0.48,
+      opacity: 0.42,
       depthWrite: false,
     });
     const chipBodyMesh = new THREE.Mesh(chipBodyGeo, chipBodyMat);
@@ -507,141 +574,229 @@ export function DigitalTwinCanvas() {
     chipBodyMesh.castShadow = true;
     oocGroup.add(chipBodyMesh);
 
-    // Precision Polished Chamfer Edges
+    // Beveled Chamfer Edge Accents
     const chipEdges = new THREE.LineSegments(
       new THREE.EdgesGeometry(chipBodyGeo),
       new THREE.LineBasicMaterial({
         color: 0x38bdf8,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.55,
       })
     );
     chipBodyMesh.add(chipEdges);
 
-    // Standard 75x25mm Microscope Slide Borosilicate Glass Base
-    const slideBaseGeo = new THREE.BoxGeometry(chipWidth + 5, 1.1, chipDepth + 4);
-    const slideBaseMat = new THREE.MeshPhysicalMaterial({
-      color: 0xe0f2fe,
-      transmission: 0.96,
+    // D. MICRO-POROUS MEMBRANE (Central Scaffold Interface at y = 0)
+    const membraneGeo = new THREE.PlaneGeometry(26, 9.5);
+    const membraneMat = new THREE.MeshStandardMaterial({
+      map: membraneTexture || undefined,
+      color: 0xffffff,
+      roughness: 0.35,
+      metalness: 0.15,
+      transparent: true,
+      opacity: 0.88,
+      side: THREE.DoubleSide,
+    });
+    const membraneMesh = new THREE.Mesh(membraneGeo, membraneMat);
+    membraneMesh.rotation.x = -Math.PI / 2;
+    membraneMesh.position.set(chipCenterX, 0, 0);
+    oocGroup.add(membraneMesh);
+
+    // Fine border frame around membrane
+    const membraneFrame = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(26.2, 0.15, 9.7)),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7 })
+    );
+    membraneFrame.position.set(chipCenterX, 0, 0);
+    oocGroup.add(membraneFrame);
+
+    // E. UPPER LAYER (Blue Channel - Apical / Epithelial / Treatment)
+    const upperChannelGroup = new THREE.Group();
+    const upperChMat = new THREE.MeshPhysicalMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.75,
+      transmission: 0.65,
       roughness: 0.08,
       metalness: 0.1,
-      ior: 1.515,
-      transparent: true,
-      opacity: 0.6,
-      depthWrite: false,
-    });
-    const slideBaseMesh = new THREE.Mesh(slideBaseGeo, slideBaseMat);
-    slideBaseMesh.position.set(chipCenterX, -chipHeight / 2 - 0.55, 0);
-    oocGroup.add(slideBaseMesh);
-
-    // Chip Fluid Inlet Port (x = 2.5)
-    const portGeo = new THREE.CylinderGeometry(1.6, 1.6, 2.8, 24);
-    const portMat = new THREE.MeshStandardMaterial({
-      color: 0xe2e8f0,
-      metalness: 0.92,
-      roughness: 0.18,
-    });
-    const inletPortMesh = new THREE.Mesh(portGeo, portMat);
-    inletPortMesh.position.set(2.5, chipHeight / 2 + 1.2, 0);
-    oocGroup.add(inletPortMesh);
-
-    // Chip Fluid Outlet Port (x = 33.5)
-    const outletPortMesh = new THREE.Mesh(portGeo, portMat);
-    outletPortMesh.position.set(chipWidth - 2.5, chipHeight / 2 + 1.2, 0);
-    oocGroup.add(outletPortMesh);
-
-    // Outlet Drain Tubing
-    const outletTubeGeo = new THREE.CylinderGeometry(1.5, 1.5, 18, 24);
-    outletTubeGeo.rotateZ(Math.PI / 2);
-    const outletTubeMesh = new THREE.Mesh(outletTubeGeo, tubeOuterMat);
-    outletTubeMesh.position.set(chipWidth + 7, 0, 0);
-    oocGroup.add(outletTubeMesh);
-
-    // Outlet Luer Fitting
-    const outletFitting = new THREE.Mesh(fittingGeo, steelMat);
-    outletFitting.position.set(chipWidth + 2.2, 0, 0);
-    outletFitting.rotation.y = Math.PI;
-    oocGroup.add(outletFitting);
-
-    // INTERNAL MICROFLUIDIC CHANNELS
-    const channelGroup = new THREE.Group();
-
-    // Microchannel material with soft cyan luminescence
-    const chMat = new THREE.MeshStandardMaterial({
-      color: 0x00d4c8,
-      emissive: 0x005c56,
-      emissiveIntensity: 0.9,
-      roughness: 0.15,
       transparent: true,
       opacity: 0.88,
     });
 
-    // 1. Channel Inflow (x: 2.5 to 12.0)
-    const chInflowGeo = new THREE.BoxGeometry(9.5, 0.8, 1.2);
-    const chInflow = new THREE.Mesh(chInflowGeo, chMat);
-    chInflow.position.set(7.25, 0, 0);
-    channelGroup.add(chInflow);
+    // Central Straight Upper Channel (y = +0.8)
+    const upperMainGeo = new THREE.BoxGeometry(24, 1.15, 2.6);
+    const upperMainMesh = new THREE.Mesh(upperMainGeo, upperChMat);
+    upperMainMesh.position.set(chipCenterX, 0.8, 0);
+    upperChannelGroup.add(upperMainMesh);
 
-    // Serpentine Capillary Channels
-    [-3.2, 3.2].forEach((offsetZ) => {
-      const branchGeo = new THREE.BoxGeometry(6.0, 0.5, 0.75);
-      const branchMesh = new THREE.Mesh(branchGeo, chMat);
-      branchMesh.position.set(10.0, 0, offsetZ);
-      channelGroup.add(branchMesh);
+    // Upper Channel Bifurcated Inlets (Y-branch split as in Figure A)
+    [-3.8, 3.8].forEach((zOffset) => {
+      // Diagonal feeder branch
+      const branchGeo = new THREE.BoxGeometry(4.8, 1.0, 1.2);
+      const branchMesh = new THREE.Mesh(branchGeo, upperChMat);
+      branchMesh.position.set(chipCenterX - 13.5, 0.8, zOffset * 0.55);
+      branchMesh.rotation.y = zOffset > 0 ? 0.45 : -0.45;
+      upperChannelGroup.add(branchMesh);
+
+      // Vertical Inlet Port Well (punched through top of PDMS)
+      const portWellGeo = new THREE.CylinderGeometry(1.2, 1.2, chipHeight / 2 - 0.3, 24);
+      const portWellMesh = new THREE.Mesh(portWellGeo, upperChMat);
+      portWellMesh.position.set(chipCenterX - 15.5, chipHeight / 4 + 0.6, zOffset);
+      upperChannelGroup.add(portWellMesh);
+
+      // Top Stainless Steel Fluidic Luer Ferrule Collar
+      const collarGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.8, 24);
+      const collarMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.2 });
+      const collarMesh = new THREE.Mesh(collarGeo, collarMat);
+      collarMesh.position.set(chipCenterX - 15.5, chipHeight / 2 + 0.4, zOffset);
+      upperChannelGroup.add(collarMesh);
     });
 
-    // 2. Central Micro-Culture Organ Chamber (x = 18.0)
-    const chamberGeo = new THREE.CylinderGeometry(5.2, 5.2, 1.6, 36);
-    const chamberMat = new THREE.MeshPhysicalMaterial({
-      color: 0x0284c7,
-      transmission: 0.75,
-      roughness: 0.1,
+    // Upper Channel Bifurcated Outlets (Y-branch split at right)
+    [-3.8, 3.8].forEach((zOffset) => {
+      const branchGeo = new THREE.BoxGeometry(4.8, 1.0, 1.2);
+      const branchMesh = new THREE.Mesh(branchGeo, upperChMat);
+      branchMesh.position.set(chipCenterX + 13.5, 0.8, zOffset * 0.55);
+      branchMesh.rotation.y = zOffset > 0 ? -0.45 : 0.45;
+      upperChannelGroup.add(branchMesh);
+
+      const portWellGeo = new THREE.CylinderGeometry(1.2, 1.2, chipHeight / 2 - 0.3, 24);
+      const portWellMesh = new THREE.Mesh(portWellGeo, upperChMat);
+      portWellMesh.position.set(chipCenterX + 15.5, chipHeight / 4 + 0.6, zOffset);
+      upperChannelGroup.add(portWellMesh);
+
+      const collarGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.8, 24);
+      const collarMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.2 });
+      const collarMesh = new THREE.Mesh(collarGeo, collarMat);
+      collarMesh.position.set(chipCenterX + 15.5, chipHeight / 2 + 0.4, zOffset);
+      upperChannelGroup.add(collarMesh);
+    });
+
+    oocGroup.add(upperChannelGroup);
+
+    // F. LOWER LAYER (Peach / Orange Channel - Endothelial / Vascular Shear Flow)
+    const lowerChannelGroup = new THREE.Group();
+    const lowerChMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf97316,
+      emissive: 0xc2410c,
+      emissiveIntensity: 0.75,
+      transmission: 0.65,
+      roughness: 0.08,
       metalness: 0.1,
       transparent: true,
-      opacity: 0.78,
+      opacity: 0.88,
     });
-    const chamberMesh = new THREE.Mesh(chamberGeo, chamberMat);
-    chamberMesh.position.set(chipCenterX, 0, 0);
-    channelGroup.add(chamberMesh);
 
-    // Micropatterned Porous Membrane (Endothelial Partition)
-    const membraneGeo = new THREE.CylinderGeometry(5.0, 5.0, 0.1, 32);
-    const membraneMat = new THREE.MeshStandardMaterial({
-      color: 0x2dd4bf,
-      emissive: 0x0f766e,
-      emissiveIntensity: 1.0,
-      wireframe: true,
-    });
-    const membraneMesh = new THREE.Mesh(membraneGeo, membraneMat);
-    membraneMesh.position.set(chipCenterX, 0, 0);
-    channelGroup.add(membraneMesh);
+    // Central Straight Lower Channel (y = -0.8, directly under membrane)
+    const lowerMainGeo = new THREE.BoxGeometry(24, 1.15, 2.6);
+    const lowerMainMesh = new THREE.Mesh(lowerMainGeo, lowerChMat);
+    lowerMainMesh.position.set(chipCenterX, -0.8, 0);
+    lowerChannelGroup.add(lowerMainMesh);
 
-    // Cellular Monolayer Luminescent Ring
-    const cellRingGeo = new THREE.TorusGeometry(3.6, 0.35, 16, 32);
-    const cellMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      emissive: 0x0284c7,
-      emissiveIntensity: 0.7,
+    // Lower Channel Staggered Inlet & Outlet ports (as in Figure A & C)
+    const lowerInletStemGeo = new THREE.BoxGeometry(5.2, 1.0, 1.4);
+    const lowerInletStem = new THREE.Mesh(lowerInletStemGeo, lowerChMat);
+    lowerInletStem.position.set(chipCenterX - 14.5, -0.8, 0);
+    lowerChannelGroup.add(lowerInletStem);
+
+    const lowerInletWellGeo = new THREE.CylinderGeometry(1.2, 1.2, chipHeight - 1.2, 24);
+    const lowerInletWell = new THREE.Mesh(lowerInletWellGeo, lowerChMat);
+    lowerInletWell.position.set(chipCenterX - 17.0, 0, 0);
+    lowerChannelGroup.add(lowerInletWell);
+
+    const lowerInletCollar = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.5, 1.5, 0.8, 24),
+      new THREE.MeshStandardMaterial({ color: 0xfb923c, metalness: 0.8, roughness: 0.3 })
+    );
+    lowerInletCollar.position.set(chipCenterX - 17.0, chipHeight / 2 + 0.4, 0);
+    lowerChannelGroup.add(lowerInletCollar);
+
+    // Lower Channel Outlet port
+    const lowerOutletStemGeo = new THREE.BoxGeometry(5.2, 1.0, 1.4);
+    const lowerOutletStem = new THREE.Mesh(lowerOutletStemGeo, lowerChMat);
+    lowerOutletStem.position.set(chipCenterX + 14.5, -0.8, 0);
+    lowerChannelGroup.add(lowerOutletStem);
+
+    const lowerOutletWellGeo = new THREE.CylinderGeometry(1.2, 1.2, chipHeight - 1.2, 24);
+    const lowerOutletWell = new THREE.Mesh(lowerOutletWellGeo, lowerChMat);
+    lowerOutletWell.position.set(chipCenterX + 17.0, 0, 0);
+    lowerChannelGroup.add(lowerOutletWell);
+
+    const lowerOutletCollar = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.5, 1.5, 0.8, 24),
+      new THREE.MeshStandardMaterial({ color: 0xfb923c, metalness: 0.8, roughness: 0.3 })
+    );
+    lowerOutletCollar.position.set(chipCenterX + 17.0, chipHeight / 2 + 0.4, 0);
+    lowerChannelGroup.add(lowerOutletCollar);
+
+    oocGroup.add(lowerChannelGroup);
+
+    // G. DUAL SIDE VACUUM CHAMBERS ("Side chambers" from Figure A Cross-section)
+    const sideChamberMat = new THREE.MeshPhysicalMaterial({
+      color: 0x1e293b,
+      transmission: 0.82,
+      roughness: 0.2,
+      metalness: 0.15,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.45,
     });
-    const cellRing = new THREE.Mesh(cellRingGeo, cellMat);
-    cellRing.position.set(chipCenterX, 0.2, 0);
-    cellRing.rotation.x = Math.PI / 2;
-    channelGroup.add(cellRing);
 
-    // 3. Channel Outflow (x: 23.0 to 33.5)
-    const chOutflowGeo = new THREE.BoxGeometry(10.5, 0.8, 1.2);
-    const chOutflow = new THREE.Mesh(chOutflowGeo, chMat);
-    chOutflow.position.set(28.25, 0, 0);
-    channelGroup.add(chOutflow);
+    const sideChamberGeo = new THREE.BoxGeometry(22, 3.4, 2.2);
 
-    oocGroup.add(channelGroup);
+    const sideChamberLeft = new THREE.Mesh(sideChamberGeo, sideChamberMat);
+    sideChamberLeft.position.set(chipCenterX, 0, -4.8);
+    oocGroup.add(sideChamberLeft);
+
+    const sideChamberLeftEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(sideChamberGeo),
+      new THREE.LineBasicMaterial({ color: 0x0284c7, transparent: true, opacity: 0.45 })
+    );
+    sideChamberLeft.add(sideChamberLeftEdges);
+
+    const sideChamberRight = new THREE.Mesh(sideChamberGeo, sideChamberMat);
+    sideChamberRight.position.set(chipCenterX, 0, 4.8);
+    oocGroup.add(sideChamberRight);
+
+    const sideChamberRightEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(sideChamberGeo),
+      new THREE.LineBasicMaterial({ color: 0x0284c7, transparent: true, opacity: 0.45 })
+    );
+    sideChamberRight.add(sideChamberRightEdges);
+
+    // Side Chamber Vacuum Actuation Ports on top surface
+    [-4.8, 4.8].forEach((zOffset) => {
+      const vacPortGeo = new THREE.CylinderGeometry(1.0, 1.0, 1.2, 20);
+      const vacPortMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.9, roughness: 0.2 });
+      const vacPortMesh = new THREE.Mesh(vacPortGeo, vacPortMat);
+      vacPortMesh.position.set(chipCenterX, chipHeight / 2 + 0.6, zOffset);
+      oocGroup.add(vacPortMesh);
+    });
+
+    // Connecting Tubing from Main Line to Chip Inlets
+    const bridgeTubeMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf8fafc,
+      transmission: 0.92,
+      roughness: 0.05,
+      transparent: true,
+      opacity: 0.5,
+    });
+    const bridgeTubeGeo = new THREE.CylinderGeometry(1.1, 1.1, 4.0, 16);
+    bridgeTubeGeo.rotateZ(Math.PI / 2);
+    const bridgeTube = new THREE.Mesh(bridgeTubeGeo, bridgeTubeMat);
+    bridgeTube.position.set(chipCenterX - 19.2, 0, 0);
+    oocGroup.add(bridgeTube);
+
+    // Outlet Drain Tubing on right side
+    const outletTubeGeo = new THREE.CylinderGeometry(1.2, 1.2, 12, 24);
+    outletTubeGeo.rotateZ(Math.PI / 2);
+    const outletTubeMesh = new THREE.Mesh(outletTubeGeo, bridgeTubeMat);
+    outletTubeMesh.position.set(chipCenterX + chipWidth / 2 + 6, 0, 0);
+    oocGroup.add(outletTubeMesh);
+
     scene.add(oocGroup);
 
     // ==========================================
-    // 8. REALISTIC SPHERICAL MICRO-PIV TRACER BEADS
-    // (Smooth circular alpha sprite - NO CHUNKY SQUARES!)
+    // 8. REALISTIC DUAL-STREAM MICRO-PIV PARTICLES
+    // Upper blue stream (Epithelial fluid) & lower peach stream (Vascular shear)
     // ==========================================
     const createCircularParticleTexture = () => {
       const canvas = document.createElement('canvas');
@@ -668,7 +823,8 @@ export function DigitalTwinCanvas() {
 
     const particleTexture = createCircularParticleTexture();
 
-    const PARTICLE_COUNT = 150;
+    // 1. Upper Flow Stream Particles (Inlet line + Upper blue channel)
+    const PARTICLE_COUNT = 140;
     const particlePositions = new Float32Array(PARTICLE_COUNT * 3);
     const particleProgress = new Float32Array(PARTICLE_COUNT);
     const particleSpeeds = new Float32Array(PARTICLE_COUNT);
@@ -676,7 +832,7 @@ export function DigitalTwinCanvas() {
     const particleOffsetsZ = new Float32Array(PARTICLE_COUNT);
 
     const pathStartX = -44;
-    const pathEndX = 44;
+    const pathEndX = chipCenterX + 16;
     const pathTotalLen = pathEndX - pathStartX;
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -692,7 +848,7 @@ export function DigitalTwinCanvas() {
     const particlesMat = new THREE.PointsMaterial({
       map: particleTexture || undefined,
       color: 0x00f0ff,
-      size: 0.85, // Realistic delicate micro-spheres
+      size: 0.85,
       transparent: true,
       opacity: 0.82,
       blending: THREE.AdditiveBlending,
@@ -701,41 +857,36 @@ export function DigitalTwinCanvas() {
     const particles = new THREE.Points(particlesGeo, particlesMat);
     scene.add(particles);
 
-    // ==========================================
-    // 9. RAYCASTING INTERACTION
-    // ==========================================
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+    // 2. Lower Flow Stream Particles (Peach / Orange vascular capillary channel)
+    const LOWER_PARTICLE_COUNT = 70;
+    const lowerParticlePositions = new Float32Array(LOWER_PARTICLE_COUNT * 3);
+    const lowerParticleProgress = new Float32Array(LOWER_PARTICLE_COUNT);
+    const lowerParticleSpeeds = new Float32Array(LOWER_PARTICLE_COUNT);
+    const lowerOffsetsZ = new Float32Array(LOWER_PARTICLE_COUNT);
 
-    const handlePointerDown = (event: MouseEvent) => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    for (let i = 0; i < LOWER_PARTICLE_COUNT; i++) {
+      lowerParticleProgress[i] = Math.random();
+      lowerParticleSpeeds[i] = 0.85 + Math.random() * 0.35;
+      lowerOffsetsZ[i] = (Math.random() - 0.5) * 1.6;
+    }
 
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects([obsZoneGroup, oocGroup, inletGroup], true);
+    const lowerParticlesGeo = new THREE.BufferGeometry();
+    lowerParticlesGeo.setAttribute('position', new THREE.BufferAttribute(lowerParticlePositions, 3));
 
-      if (intersects.length > 0) {
-        let currentObj: THREE.Object3D | null = intersects[0].object;
-        while (currentObj && !currentObj.name && currentObj.parent) {
-          currentObj = currentObj.parent;
-        }
-
-        if (currentObj?.name === 'ORGAN_ON_CHIP') {
-          setInspectionTarget('ORGAN_ON_CHIP');
-          setCameraPreset('ORGAN_ON_CHIP');
-        } else if (currentObj?.name === 'INLET_OBSERVATION') {
-          setInspectionTarget('INLET_OBSERVATION');
-          setCameraPreset('INLET_OBSERVATION');
-        }
-      }
-    };
-
-    const domElement = renderer.domElement;
-    domElement.addEventListener('pointerdown', handlePointerDown);
+    const lowerParticlesMat = new THREE.PointsMaterial({
+      map: particleTexture || undefined,
+      color: 0xf97316,
+      size: 0.85,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const lowerParticles = new THREE.Points(lowerParticlesGeo, lowerParticlesMat);
+    scene.add(lowerParticles);
 
     // ==========================================
-    // 10. ANIMATION & TELEMETRY FLOW LOOP
+    // 9. ANIMATION & TELEMETRY FLOW LOOP
     // ==========================================
     let animationFrameId: number;
     let clock = new THREE.Clock();
@@ -749,23 +900,142 @@ export function DigitalTwinCanvas() {
       ORGAN_ON_CHIP: { pos: new THREE.Vector3(chipCenterX, 5, 22), target: new THREE.Vector3(chipCenterX, 0, 0) },
     };
 
+    // Zoom & Preset Transition Control
+    const MIN_DIST = 10;
+    const MAX_DIST = 110;
+    let targetDistance = camera.position.distanceTo(controls.target);
+    let isZoomAnimating = false;
+
+    let activePreset = presetRef.current;
+    let isTransitioningPreset = false;
+    let presetProgress = 0;
+    const presetStartPos = new THREE.Vector3();
+    const presetStartTarget = new THREE.Vector3();
+    const presetTargetPos = new THREE.Vector3();
+    const presetTargetTarget = new THREE.Vector3();
+
+    const triggerPresetTransition = (presetKey: CameraPreset) => {
+      const p = PRESETS[presetKey] || PRESETS.FULL_SYSTEM;
+      presetStartPos.copy(camera.position);
+      presetStartTarget.copy(controls.target);
+
+      // Preserve the user's current zoom distance!
+      // Presets only re-center the target; zoom distance is strictly controlled by the zoom bar.
+      const currentDist = camera.position.distanceTo(controls.target);
+      const viewDir = p.pos.clone().sub(p.target).normalize();
+
+      presetTargetTarget.copy(p.target);
+      presetTargetPos.copy(p.target).add(viewDir.multiplyScalar(currentDist));
+
+      isTransitioningPreset = true;
+      presetProgress = 0;
+      isZoomAnimating = false;
+    };
+
+    // Synchronize UI zoom slider with current camera distance
+    let lastNotifiedLevel = -1;
+    const notifyZoomChanged = () => {
+      const d = camera.position.distanceTo(controls.target);
+      const level = THREE.MathUtils.clamp((MAX_DIST - d) / (MAX_DIST - MIN_DIST), 0, 1);
+      if (Math.abs(level - lastNotifiedLevel) > 0.008) {
+        lastNotifiedLevel = level;
+        window.dispatchEvent(
+          new CustomEvent('bioguardian:zoom_changed', { detail: { level, distance: d } })
+        );
+      }
+    };
+
+    controls.addEventListener('start', () => {
+      isZoomAnimating = false;
+      isTransitioningPreset = false;
+    });
+
+    controls.addEventListener('change', () => {
+      if (!isTransitioningPreset && !isZoomAnimating) {
+        targetDistance = camera.position.distanceTo(controls.target);
+        notifyZoomChanged();
+      }
+    });
+
+    // Custom Event Listeners for On-Screen Zoom Controls
+    const handleZoomStep = (e: Event) => {
+      const customEvent = e as CustomEvent<{ direction: 'in' | 'out'; amount?: number }>;
+      const dir = customEvent.detail?.direction || 'in';
+      const factor = customEvent.detail?.amount || 0.2;
+      const currentD = camera.position.distanceTo(controls.target);
+      targetDistance = currentD;
+      if (dir === 'in') {
+        targetDistance = Math.max(MIN_DIST, targetDistance * (1 - factor));
+      } else {
+        targetDistance = Math.min(MAX_DIST, targetDistance * (1 + factor));
+      }
+      isZoomAnimating = true;
+    };
+
+    const handleSetZoomLevel = (e: Event) => {
+      const customEvent = e as CustomEvent<{ level: number }>;
+      const lvl = THREE.MathUtils.clamp(customEvent.detail?.level ?? 0.5, 0, 1);
+      targetDistance = MAX_DIST - lvl * (MAX_DIST - MIN_DIST);
+      isZoomAnimating = true;
+    };
+
+    const handleResetZoom = () => {
+      triggerPresetTransition(presetRef.current);
+    };
+
+    window.addEventListener('bioguardian:zoom_step', handleZoomStep);
+    window.addEventListener('bioguardian:set_zoom_level', handleSetZoomLevel);
+    window.addEventListener('bioguardian:reset_zoom', handleResetZoom);
+
+    // Initial sync
+    setTimeout(notifyZoomChanged, 100);
+
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
       const currentTelemetry = telemetryRef.current;
 
-      // Camera interpolation towards selected preset
-      const targetPreset = PRESETS[presetRef.current] || PRESETS.FULL_SYSTEM;
-      camera.position.lerp(targetPreset.pos, 0.05);
-      controls.target.lerp(targetPreset.target, 0.05);
-      controls.update();
+      // 1. Preset smooth transition
+      if (activePreset !== presetRef.current) {
+        activePreset = presetRef.current;
+        triggerPresetTransition(activePreset);
+      }
+
+      if (isTransitioningPreset) {
+        presetProgress += delta * 2.2;
+        if (presetProgress >= 1.0) {
+          presetProgress = 1.0;
+          isTransitioningPreset = false;
+        }
+        const t = presetProgress;
+        const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        camera.position.lerpVectors(presetStartPos, presetTargetPos, ease);
+        controls.target.lerpVectors(presetStartTarget, presetTargetTarget, ease);
+        controls.update();
+        notifyZoomChanged();
+      } else if (isZoomAnimating) {
+        // 2. Smooth zoom in / out animation
+        const offset = camera.position.clone().sub(controls.target);
+        const currentDist = offset.length();
+        if (Math.abs(currentDist - targetDistance) > 0.08) {
+          const newDist = THREE.MathUtils.lerp(currentDist, targetDistance, 0.16);
+          offset.setLength(newDist);
+          camera.position.copy(controls.target).add(offset);
+          controls.update();
+          notifyZoomChanged();
+        } else {
+          isZoomAnimating = false;
+        }
+      } else {
+        controls.update();
+      }
 
       // Flow speed factor
       const flowRate = Math.max(0, currentTelemetry.flow_rate || 0);
       const flowSpeedFactor = flowRate / 450.0;
 
-      // Particle movement along microfluidic path
+      // 1. Upper stream particle movement along microfluidic path & upper blue channel
       const posArr = particlesGeo.attributes.position.array as Float32Array;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         if (flowSpeedFactor > 0.01) {
@@ -779,10 +1049,10 @@ export function DigitalTwinCanvas() {
         let currY = particleOffsetsY[i];
         let currZ = particleOffsetsZ[i];
 
-        // Chamber expansion widening
-        if (currX > 12 && currX < 24) {
-          const chamberRatio = Math.sin(((currX - 12) / 12) * Math.PI);
-          currZ *= 1.0 + chamberRatio * 2.2;
+        // When entering the chip (currX > 0), particles flow through the upper blue channel
+        if (currX > 0) {
+          currY = 0.8 + particleOffsetsY[i] * 0.35;
+          currZ = particleOffsetsZ[i] * 0.7;
         }
 
         posArr[i * 3 + 0] = currX;
@@ -790,6 +1060,30 @@ export function DigitalTwinCanvas() {
         posArr[i * 3 + 2] = currZ;
       }
       particlesGeo.attributes.position.needsUpdate = true;
+
+      // 2. Lower stream particle movement through peach/orange vascular channel
+      const lowerPosArr = lowerParticlesGeo.attributes.position.array as Float32Array;
+      for (let i = 0; i < LOWER_PARTICLE_COUNT; i++) {
+        if (flowSpeedFactor > 0.01) {
+          lowerParticleProgress[i] += delta * 0.14 * flowSpeedFactor * lowerParticleSpeeds[i];
+          if (lowerParticleProgress[i] > 1.0) {
+            lowerParticleProgress[i] = 0.0;
+          }
+        }
+        const lx = (chipCenterX - 12.0) + lowerParticleProgress[i] * 24.0;
+        const ly = -0.8;
+        const lz = lowerOffsetsZ[i] * 0.55;
+        lowerPosArr[i * 3 + 0] = lx;
+        lowerPosArr[i * 3 + 1] = ly;
+        lowerPosArr[i * 3 + 2] = lz;
+      }
+      lowerParticlesGeo.attributes.position.needsUpdate = true;
+
+      // 3. Physiological Cyclic Membrane & Side Chamber Breathing Actuation
+      const breathPhase = Math.sin(time * 2.4);
+      sideChamberLeft.scale.z = 1.0 + breathPhase * 0.05;
+      sideChamberRight.scale.z = 1.0 + breathPhase * 0.05;
+      membraneMesh.position.y = breathPhase * 0.025;
 
       // Optical Observation Status Ring & LED
       const prob = currentTelemetry.bubble_probability;
@@ -877,9 +1171,12 @@ export function DigitalTwinCanvas() {
     return () => {
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
-      domElement.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('bioguardian:zoom_step', handleZoomStep);
+      window.removeEventListener('bioguardian:set_zoom_level', handleSetZoomLevel);
+      window.removeEventListener('bioguardian:reset_zoom', handleResetZoom);
       cancelAnimationFrame(animationFrameId);
       particleTexture?.dispose();
+      membraneTexture?.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);

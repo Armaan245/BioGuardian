@@ -119,11 +119,10 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const triggerBubbleSpot = (focusCamera: boolean = true) => {
+  const triggerBubbleSpot = (focusCamera: boolean = false) => {
     setShowBubbleSpotVisual(true);
     if (focusCamera) {
       setCameraPreset('INLET_OBSERVATION');
-      setInspectionTarget('INLET_OBSERVATION');
     }
     if (providerMode === 'mock') {
       mockProviderRef.current?.triggerBubble();

@@ -439,6 +439,32 @@ export function TelemetryDrawers({
               </button>
             </div>
 
+            {/* Component Quick Switcher */}
+            <div className="grid grid-cols-2 gap-2 mt-3.5 p-1 bg-white/[0.04] border border-white/10 rounded-xl">
+              <button
+                onClick={() => setInspectionTarget('ORGAN_ON_CHIP')}
+                className={`py-1.5 px-2 rounded-lg text-xs font-mono transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  inspectionTarget === 'ORGAN_ON_CHIP'
+                    ? 'bg-teal/20 text-teal font-semibold border border-teal/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Microscope className="size-3.5" />
+                Organ-on-Chip
+              </button>
+              <button
+                onClick={() => setInspectionTarget('INLET_OBSERVATION')}
+                className={`py-1.5 px-2 rounded-lg text-xs font-mono transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  inspectionTarget === 'INLET_OBSERVATION'
+                    ? 'bg-teal/20 text-teal font-semibold border border-teal/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Eye className="size-3.5" />
+                Inlet Zone
+              </button>
+            </div>
+
             {inspectionTarget === 'ORGAN_ON_CHIP' ? (
               <div className="mt-4 space-y-3">
                 <div className="grid grid-cols-2 gap-2.5">
