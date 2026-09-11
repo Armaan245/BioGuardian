@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 import json
 import logging
 import os
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import paho.mqtt.client as mqtt
@@ -125,11 +125,18 @@ async def lifespan(app: FastAPI):
     loop_ref = asyncio.get_running_loop()
 
     # Initialize MQTT client
-    mqtt_client = mqtt.Client(client_id="BioGuardian-FastAPI-Gateway")
+    try:
+        mqtt_client = mqtt.Client(
+            mqtt.CallbackAPIVersion.VERSION2,
+            client_id="BioGuardian-FastAPI-Gateway"
+        )
+    except (AttributeError, TypeError):
+        mqtt_client = mqtt.Client(client_id="BioGuardian-FastAPI-Gateway")
     mqtt_client.on_message = on_mqtt_message
 
     def on_connect(client, userdata, flags, rc, properties=None):
-        if rc == 0:
+        is_success = (rc == 0) if isinstance(rc, int) else (not getattr(rc, "is_failure", False))
+        if is_success:
             logger.info(f"[MQTT] Connected to broker at {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}")
             for topic in MQTT_TOPICS:
                 client.subscribe(topic)

@@ -75,18 +75,16 @@ const int   MQTT_PORT       = 1883;
 
 ---
 
-## 4. Hardware Test Mode (No Sensors Plugged In)
+## 4. Standalone Mock Firmware (Zero Wiring Required)
 
-If your physical sensors are not yet wired or you want to verify the network connection first:
+For rapid end-to-end testing without wiring up physical breadboard sensors, use the dedicated mock sketch:
+👉 [`hardware/esp32_firmware/esp32_mock_sensor_node.ino`](file:///home/buildwithrehan_7/Desktop/BioGuardian/BioGuardian/hardware/esp32_firmware/esp32_mock_sensor_node.ino)
 
-Change line 56 in `esp32_firmware.ino`:
-```cpp
-const bool HARDWARE_TEST_MODE = true;
-```
-
-In this mode:
-- The ESP32 generates realistic simulated microfluidic data (flow rate, isobaric pressure, 37.0°C temperature).
-- Every 30 seconds, it automatically triggers a simulated **Bubble Detection** event to test the valve relay and dashboard alert!
+### What it does:
+- Generates realistic microfluidic physics (flow ~450 µL/min, pressure ~1012 mbar, temp ~37.0°C, pH ~7.38).
+- Automatically triggers a simulated bubble event every 25 seconds for 5 seconds to test the Digital Twin alert.
+- Transmits HTTP POST packets directly to `http://<YOUR_PC_IP>:8004/api/telemetry/ingest`.
+- Rapidly flashes the on-board LED on GPIO 2 when a bubble anomaly is triggered.
 
 ---
 
@@ -99,20 +97,16 @@ In this mode:
    - In "Additional Board Manager URLs", add:
      `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
    - Go to **Boards Manager**, search for `esp32` by Espressif, and click **Install**.
-3. Install the **PubSubClient** library (if using MQTT):
-   - Go to **Library Manager**, search for `PubSubClient` by Nick O'Leary, and click **Install**.
-   *(HTTPClient and WiFi are built into the ESP32 board package automatically)*.
+3. *(Optional)* Install **PubSubClient** if using MQTT. For direct HTTP REST, no extra libraries are needed!
 
 ### Board Settings in Arduino IDE
 - **Board**: `ESP32 Dev Module` (or `NodeMCU-32S`)
 - **CPU Frequency**: `240MHz (WiFi/BT)`
-- **Flash Frequency**: `80MHz`
-- **Flash Mode**: `QIO`
 - **Upload Speed**: `921600` (or `115200` if upload fails)
-- **Port**: Select the USB COM port of your ESP32 (e.g., `COM3` on Windows, `/dev/ttyUSB0` on Linux/Mac).
+- **Port**: Select the USB COM port of your ESP32 (e.g., `COM3` on Windows, `/dev/ttyUSB0` on Linux).
 
 ### Compile & Upload
-1. Open `hardware/esp32_firmware/esp32_firmware.ino`.
+1. Open `hardware/esp32_firmware/esp32_mock_sensor_node.ino` (or `esp32_firmware.ino`).
 2. Update `WIFI_SSID`, `WIFI_PASSWORD`, and `SERVER_BASE_URI`.
 3. Click the **Upload** arrow button.
 4. If your board requires it, hold down the **BOOT** button on the ESP32 when `Connecting........___` appears.
@@ -125,32 +119,35 @@ Open the **Serial Monitor** at **115200 baud**:
 
 You will see:
 ```
-==================================================
-  BioGuardian ESP32 Microfluidic Node Starting   
-==================================================
-[WiFi] Connecting to: MyLabWiFi
-........
-[WiFi] Connected! IP Address: 192.168.1.145
-[WiFi] Signal Strength (RSSI): -54 dBm
-[Setup] Hardware initialization complete.
---------------------------------------------------
-[Sensor] {"device_id":"BG-ESP32-001","ph":7.38,"glucose":92.4,"oxygen":6.8,"pressure":1012.4,"flow_rate":450.0,"temperature":37.0,"bubble_detected":false,"bubble_probability":0.02,"source":"device"}
-[HTTP] POST sent to http://192.168.1.100:8000/api/telemetry/ingest -> Code: 200
+==========================================================
+    BioGuardian ESP32 Mock Telemetry Transmitter Node     
+==========================================================
+ Mode: Standalone Mock Sensors (Zero Hardware Wiring)
+ Target Endpoint: http://10.126.25.224:8004/api/telemetry/ingest
+----------------------------------------------------------
+[WiFi] Connecting to SSID: MyLabWiFi
+.....
+[WiFi] Successfully connected!
+[WiFi] ESP32 IP Address: 10.126.25.145
+[WiFi] Target Backend URL: http://10.126.25.224:8004/api/telemetry/ingest
+
+🟢 [NOMINAL] HTTP 200 | Flow: 452.1 uL/min | Press: 1012.8 mbar | Temp: 37.0 C | Bubble: NO
+🟢 [NOMINAL] HTTP 200 | Flow: 449.6 uL/min | Press: 1011.9 mbar | Temp: 37.1 C | Bubble: NO
+🔴 [BUBBLE ALERT] HTTP 200 | Flow: 310.0 uL/min | Press: 1032.5 mbar | Temp: 37.0 C | Bubble: YES
 ```
 
 ---
 
-## 7. Connecting to the Web Dashboard & 3D Digital Twin
+## 7. Starting the Backend Server on Port 8004
 
-1. On your PC, ensure the FastAPI backend is running:
+1. On your PC, start the FastAPI backend on port 8004 binding to `0.0.0.0`:
    ```bash
    cd server
-   source .venv/bin/activate
-   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+   ./.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8004
    ```
-   *(Binding to `0.0.0.0` allows the ESP32 on your local WiFi network to reach the server).*
+   *(Binding to `0.0.0.0` allows the ESP32 on your local Wi-Fi to reach port 8004).*
 
-2. Open the frontend dashboard at `http://localhost:3000/dashboard`:
+2. Open the frontend dashboard:
    - Click **`[ 📡 Real-Time APIs ]`** in the top bar.
-   - The status badge will turn green: **`● API PORT 8000 LIVE`**.
-   - The live sensor readings and 3D Digital Twin will now update in real time with the ESP32 hardware!
+   - The status badge will turn green: **`● LIVE APIS CONNECTED`**.
+   - The live sensor readings and 3D Digital Twin will now update in real time with the ESP32!

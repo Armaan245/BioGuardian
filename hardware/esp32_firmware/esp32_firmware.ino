@@ -38,10 +38,10 @@ const char* DEVICE_ID     = "BG-ESP32-001";
 
 // ------------------------------------------------------------------------------
 // OPTIONAL HTTP BACKEND CONFIGURATION:
-// Set to IP address of your machine running FastAPI backend (e.g. "http://192.168.1.100:8000")
+// Set to IP address of your machine running FastAPI backend (e.g. "http://10.126.25.224:8004")
 // If left empty (""), HTTP transmission will be skipped gracefully.
 // ------------------------------------------------------------------------------
-const char* SERVER_BASE_URI = "http://192.168.1.100:8000"; 
+const char* SERVER_BASE_URI = "http://10.126.25.224:8004"; 
 const bool  ENABLE_HTTP_POST = true;
 
 // ------------------------------------------------------------------------------
