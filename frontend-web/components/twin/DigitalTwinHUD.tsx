@@ -204,74 +204,105 @@ export function DigitalTwinHUD({
   return (
     <div className="absolute inset-0 pointer-events-none p-4 sm:p-6 flex flex-col justify-between z-30">
       {/* 1. TOP FLOATING HUD ROW */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        {/* Left: Brand & Telemetry Source Switch */}
-        <div className="bg-[#090e1a]/85 backdrop-blur-md border border-teal/20 p-2 sm:px-4 sm:py-2 rounded-2xl pointer-events-auto shadow-xl flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-teal animate-pulse" />
-            <span className="font-semibold text-xs tracking-wide text-white">BIOGUARDIAN TWIN</span>
-          </div>
-          <div className="h-4 w-px bg-white/15 hidden sm:block" />
-
-          {/* Mode Selector Segmented Buttons */}
-          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-            <button
-              onClick={() => setProviderMode('mock')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider transition flex items-center gap-1.5 ${
-                providerMode === 'mock'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Sparkles className="size-3 text-amber-400" /> SIMULATION
-            </button>
-            <button
-              onClick={() => setProviderMode('real')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider transition flex items-center gap-1.5 ${
-                providerMode === 'real'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Wifi className="size-3 text-emerald-400" /> LIVE APIS
-            </button>
-          </div>
-
-          {/* Simulation vs Real Action Buttons */}
-          {providerMode === 'mock' ? (
+      <div className="flex flex-col lg:flex-row items-start justify-between gap-3">
+        {/* Left: Brand & Telemetry Source Switch + Top-Left Alert */}
+        <div className="flex flex-col items-start gap-2.5 max-w-xl">
+          <div className="bg-[#090e1a]/85 backdrop-blur-md border border-teal/20 p-2 sm:px-4 sm:py-2 rounded-2xl pointer-events-auto shadow-xl flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              {!showBubbleSpotVisual && !isBubbleDetected ? (
+              <span className="size-2 rounded-full bg-teal animate-pulse" />
+              <span className="font-semibold text-xs tracking-wide text-white">BIOGUARDIAN TWIN</span>
+            </div>
+            <div className="h-4 w-px bg-white/15 hidden sm:block" />
+
+            {/* Mode Selector Segmented Buttons */}
+            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+              <button
+                onClick={() => setProviderMode('mock')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider transition flex items-center gap-1.5 ${
+                  providerMode === 'mock'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="size-3 text-amber-400" /> SIMULATION
+              </button>
+              <button
+                onClick={() => setProviderMode('real')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider transition flex items-center gap-1.5 ${
+                  providerMode === 'real'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Wifi className="size-3 text-emerald-400" /> LIVE APIS
+              </button>
+            </div>
+
+            {/* Simulation vs Real Action Buttons */}
+            {providerMode === 'mock' ? (
+              <div className="flex items-center gap-2">
+                {!showBubbleSpotVisual && !isBubbleDetected ? (
+                  <button
+                    onClick={() => triggerBubbleSpot(false)}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 transition flex items-center gap-1.5 shadow-sm"
+                    title="Spot air bubble at optical inspection zone"
+                  >
+                    <Radio className="size-3 text-rose-400 animate-pulse" /> SHOW BUBBLE SPOT
+                  </button>
+                ) : (
+                  <button
+                    onClick={clearBubbleSpot}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 transition flex items-center gap-1.5 shadow-sm"
+                    title="Clear bubble and restore normal flow"
+                  >
+                    <CheckCircle2 className="size-3 text-emerald-400" /> CLEAR SPOT
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => triggerBubbleSpot(false)}
-                  className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 transition flex items-center gap-1.5 shadow-sm"
-                  title="Spot air bubble at optical inspection zone"
+                  onClick={fetchLatestFromApi}
+                  disabled={isApiFetching}
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-teal/20 hover:bg-teal/30 border border-teal/40 text-teal transition flex items-center gap-1.5 disabled:opacity-50"
+                  title="Fetch latest reading from FastAPI endpoint"
                 >
-                  <Radio className="size-3 text-rose-400 animate-pulse" /> SHOW BUBBLE SPOT
+                  <RotateCcw className={`size-3 text-teal ${isApiFetching ? 'animate-spin' : ''}`} />
+                  {isApiFetching ? 'FETCHING...' : 'FETCH API'}
                 </button>
-              ) : (
+                <span className="text-[10px] text-slate-400 font-mono hidden md:inline">
+                  {status === 'CONNECTED' ? 'PORT 8000 LIVE' : status === 'STALE' ? 'STALE' : 'OFFLINE'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Top-Left Alert Banner (Displaced from middle of screen to top-left) */}
+          {(isBubbleDetected || showBubbleSpotVisual) && (
+            <div className="pointer-events-auto bg-rose-950/95 backdrop-blur-md border border-rose-500/60 px-4 py-2.5 rounded-2xl shadow-2xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2.5">
+                <AlertOctagon className="size-4 text-rose-400 shrink-0 animate-pulse" />
+                <div className="text-xs text-rose-200">
+                  <div className="font-bold tracking-wide text-white flex items-center gap-1.5">
+                    BUBBLE SPOTTED AT OPTICAL ZONE <span className="text-[11px] font-mono text-rose-300 font-normal">({probPercent}% risk)</span>
+                  </div>
+                  <div className="text-[10px] text-rose-300/90 leading-tight mt-0.5">Observation reticle highlighted · Valve intercept armed</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+                <button
+                  onClick={() => setBubbleDrawerOpen(true)}
+                  className="px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-semibold transition cursor-pointer shadow-xs"
+                >
+                  Inspect
+                </button>
                 <button
                   onClick={clearBubbleSpot}
-                  className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 transition flex items-center gap-1.5 shadow-sm"
-                  title="Clear bubble and restore normal flow"
+                  className="px-2.5 py-1 rounded-lg border border-rose-400/50 bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition cursor-pointer"
                 >
-                  <CheckCircle2 className="size-3 text-emerald-400" /> CLEAR SPOT
+                  Clear Spot
                 </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={fetchLatestFromApi}
-                disabled={isApiFetching}
-                className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold tracking-wider bg-teal/20 hover:bg-teal/30 border border-teal/40 text-teal transition flex items-center gap-1.5 disabled:opacity-50"
-                title="Fetch latest reading from FastAPI endpoint"
-              >
-                <RotateCcw className={`size-3 text-teal ${isApiFetching ? 'animate-spin' : ''}`} />
-                {isApiFetching ? 'FETCHING...' : 'FETCH API'}
-              </button>
-              <span className="text-[10px] text-slate-400 font-mono hidden md:inline">
-                {status === 'CONNECTED' ? 'PORT 8000 LIVE' : status === 'STALE' ? 'STALE' : 'OFFLINE'}
-              </span>
+              </div>
             </div>
           )}
         </div>
@@ -364,34 +395,7 @@ export function DigitalTwinHUD({
         </div>
       </div>
 
-      {/* 2. CENTER FLOATING ALERTS (If bubble detected or spot simulated) */}
-      {(isBubbleDetected || showBubbleSpotVisual) && (
-        <div className="self-center pointer-events-auto bg-rose-950/90 backdrop-blur-md border border-rose-500/60 px-5 py-3 rounded-2xl shadow-2xl flex flex-wrap items-center justify-between gap-3 animate-pulse max-w-lg">
-          <div className="flex items-center gap-3">
-            <AlertOctagon className="size-5 text-rose-400 shrink-0" />
-            <div className="text-xs text-rose-200">
-              <span className="font-bold tracking-wide text-white">BUBBLE SPOTTED AT OPTICAL ZONE</span> ({probPercent}% risk)
-              <div className="text-[10px] text-rose-300 mt-0.5">Observation reticle highlighted · Valve intercept armed</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setBubbleDrawerOpen(true)}
-              className="px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-semibold hover:bg-rose-600 transition"
-            >
-              Inspect
-            </button>
-            <button
-              onClick={clearBubbleSpot}
-              className="px-2.5 py-1 rounded-lg border border-rose-400/50 bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition"
-            >
-              Clear Spot
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 3. BOTTOM CONTROL & NAVIGATION BAR */}
+      {/* 2. BOTTOM CONTROL & NAVIGATION BAR */}
       <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 pointer-events-auto">
         {/* Left: Camera Presets */}
         <div className="bg-[#090e1a]/85 backdrop-blur-md border border-teal/20 p-1.5 rounded-2xl shadow-xl flex items-center gap-1">
