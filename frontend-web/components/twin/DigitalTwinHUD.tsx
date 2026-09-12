@@ -68,6 +68,7 @@ export function DigitalTwinHUD({
     showBubbleSpotVisual,
     fetchLatestFromApi,
     isApiFetching,
+    backendUrl,
   } = useTelemetry();
 
   const probPercent = Math.round(telemetry.bubble_probability * 100);
@@ -270,8 +271,11 @@ export function DigitalTwinHUD({
                   <RotateCcw className={`size-3 text-teal ${isApiFetching ? 'animate-spin' : ''}`} />
                   {isApiFetching ? 'FETCHING...' : 'FETCH API'}
                 </button>
-                <span className="text-[10px] text-slate-400 font-mono hidden md:inline">
-                  {status === 'CONNECTED' ? 'PORT 8000 LIVE' : status === 'STALE' ? 'STALE' : 'OFFLINE'}
+                <span
+                  className="text-[10px] text-slate-400 font-mono hidden md:inline"
+                  title={`API Base: ${backendUrl}`}
+                >
+                  {status === 'CONNECTED' ? 'LIVE APIS' : status === 'STALE' ? 'STALE' : 'OFFLINE'}
                 </span>
               </div>
             )}

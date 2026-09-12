@@ -54,6 +54,7 @@ export function DashboardShell() {
     fetchLatestFromApi,
     isApiFetching,
     setSimulationFlowRate,
+    backendUrl,
   } = useTelemetry();
 
   const isBubbleSpotted = telemetry.bubble_detected || showBubbleSpotVisual;
@@ -157,7 +158,9 @@ export function DashboardShell() {
                     status === 'CONNECTED' ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'
                   }`}
                 />
-                {status === 'CONNECTED' ? 'API PORT 8000 LIVE' : status === 'CONNECTING' ? 'CONNECTING...' : 'API OFFLINE'}
+                <span title={`API Base: ${backendUrl}`}>
+                  {status === 'CONNECTED' ? 'LIVE APIS CONNECTED' : status === 'CONNECTING' ? 'CONNECTING...' : 'API OFFLINE'}
+                </span>
               </span>
             )}
             <Bell className="size-4 text-muted-foreground" />
@@ -289,8 +292,8 @@ export function DashboardShell() {
                     <RotateCcw className={`size-3.5 ${isApiFetching ? 'animate-spin' : ''}`} />
                     {isApiFetching ? 'Fetching...' : 'Fetch from API Now'}
                   </button>
-                  <span className="text-xs font-mono text-muted-foreground">
-                    http://localhost:8000
+                  <span className="text-xs font-mono text-muted-foreground" title="Configured via NEXT_PUBLIC_API_BASE_URL">
+                    {backendUrl}
                   </span>
                 </div>
               )}

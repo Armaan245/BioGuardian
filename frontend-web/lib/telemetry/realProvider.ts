@@ -31,26 +31,77 @@ export class RealTelemetryProvider {
     source: 'REAL DEVICE',
   };
 
-  constructor(wsUrl?: string, httpBaseUrl?: string) {
-    const host =
+  private deviceId: string;
+
+  constructor(wsUrl?: string, httpBaseUrl?: string, deviceId?: string) {
+    this.deviceId =
+      deviceId ||
+      (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_DEVICE_ID : undefined) ||
+      'BG-ESP32-001';
+
+    const defaultHost =
       typeof window !== 'undefined'
         ? window.location.hostname || 'localhost'
         : 'localhost';
 
-    this.wsUrl = wsUrl || `ws://${host}:8000/ws/devices/BG-ESP32-001`;
-    this.httpBaseUrl = httpBaseUrl || `http://${host}:8000`;
+    const envHttp =
+      typeof process !== 'undefined'
+        ? process.env.NEXT_PUBLIC_API_BASE_URL?.trim()
+        : undefined;
+
+    const envWs =
+      typeof process !== 'undefined'
+        ? process.env.NEXT_PUBLIC_WS_BASE_URL?.trim()
+        : undefined;
+
+    // Resolve HTTP base URL (strip trailing slashes)
+    const rawHttp = httpBaseUrl || envHttp || `http://${defaultHost}:8000`;
+    this.httpBaseUrl = rawHttp.replace(/\/+$/, '');
+
+    // Resolve WS URL: either explicit wsUrl, env WS, or auto-derived from HTTP URL
+    if (wsUrl) {
+      this.wsUrl = wsUrl;
+    } else if (envWs) {
+      const cleanWs = envWs.replace(/\/+$/, '');
+      this.wsUrl = cleanWs.includes('/ws/devices')
+        ? cleanWs
+        : `${cleanWs}/ws/devices/${this.deviceId}`;
+    } else if (this.httpBaseUrl.startsWith('https://')) {
+      const wsHost = this.httpBaseUrl.replace(/^https:\/\//, 'wss://');
+      this.wsUrl = `${wsHost}/ws/devices/${this.deviceId}`;
+    } else if (this.httpBaseUrl.startsWith('http://')) {
+      const wsHost = this.httpBaseUrl.replace(/^http:\/\//, 'ws://');
+      this.wsUrl = `${wsHost}/ws/devices/${this.deviceId}`;
+    } else {
+      this.wsUrl = `ws://${defaultHost}:8000/ws/devices/${this.deviceId}`;
+    }
+  }
+
+  public getHttpBaseUrl(): string {
+    return this.httpBaseUrl;
+  }
+
+  public getWsUrl(): string {
+    return this.wsUrl;
+  }
+
+  public getDeviceId(): string {
+    return this.deviceId;
   }
 
   public async fetchLatest(): Promise<BioGuardianTelemetry | null> {
     if (typeof window === 'undefined') return null;
     try {
-      const res = await fetch(`${this.httpBaseUrl}/api/telemetry/latest?device_id=BG-ESP32-001`, {
-        cache: 'no-store',
-      });
+      const res = await fetch(
+        `${this.httpBaseUrl}/api/telemetry/latest?device_id=${encodeURIComponent(this.deviceId)}`,
+        {
+          cache: 'no-store',
+        }
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const raw = await res.json();
       const normalized: BioGuardianTelemetry = {
-        device_id: String(raw.device_id || 'BG-ESP32-001'),
+        device_id: String(raw.device_id || this.deviceId),
         timestamp: String(raw.timestamp || new Date().toISOString()),
         ph: Number(raw.ph ?? 7.38),
         glucose: Number(raw.glucose ?? 92.4),
@@ -74,9 +125,12 @@ export class RealTelemetryProvider {
 
   public async triggerBackendBubbleSpike(): Promise<boolean> {
     try {
-      const res = await fetch(`${this.httpBaseUrl}/api/telemetry/bubble-spike?device_id=BG-ESP32-001`, {
-        method: 'POST',
-      });
+      const res = await fetch(
+        `${this.httpBaseUrl}/api/telemetry/bubble-spike?device_id=${encodeURIComponent(this.deviceId)}`,
+        {
+          method: 'POST',
+        }
+      );
       if (!res.ok) return false;
       await this.fetchLatest();
       return true;
@@ -88,14 +142,36 @@ export class RealTelemetryProvider {
 
   public async clearBackendBubble(): Promise<boolean> {
     try {
-      const res = await fetch(`${this.httpBaseUrl}/api/telemetry/bubble-clear?device_id=BG-ESP32-001`, {
-        method: 'POST',
-      });
+      const res = await fetch(
+        `${this.httpBaseUrl}/api/telemetry/bubble-clear?device_id=${encodeURIComponent(this.deviceId)}`,
+        {
+          method: 'POST',
+        }
+      );
       if (!res.ok) return false;
       await this.fetchLatest();
       return true;
     } catch (e) {
       console.warn('[RealProvider] clearBackendBubble error:', e);
+      return false;
+    }
+  }
+
+  public async setBackendFlowRate(flowRate: number): Promise<boolean> {
+    try {
+      const res = await fetch(
+        `${this.httpBaseUrl}/api/telemetry/flow?device_id=${encodeURIComponent(this.deviceId)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ flow_rate: flowRate }),
+        }
+      );
+      if (!res.ok) return false;
+      await this.fetchLatest();
+      return true;
+    } catch (e) {
+      console.warn('[RealProvider] setBackendFlowRate error:', e);
       return false;
     }
   }

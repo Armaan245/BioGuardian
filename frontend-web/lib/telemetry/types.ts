@@ -16,6 +16,9 @@ export interface BioGuardianTelemetry {
   source: 'SIMULATION' | 'REAL DEVICE';
 }
 
+
+
+
 export type ConnectionStatus =
   | 'CONNECTED'
   | 'CONNECTING'
@@ -54,4 +57,5 @@ export interface TelemetryContextValue {
   setInspectionTarget: (target: InspectionTarget) => void;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+  backendUrl: string;
 }

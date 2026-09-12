@@ -143,8 +143,20 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
   const setSimulationFlowRate = (rate: number) => {
     if (providerMode === 'mock') {
       mockProviderRef.current?.setFlowRate(rate);
+    } else {
+      realProviderRef.current?.setBackendFlowRate(rate);
     }
   };
+
+  const backendUrl = useMemo(() => {
+    return (
+      realProviderRef.current?.getHttpBaseUrl() ||
+      (typeof process !== 'undefined'
+        ? process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '')
+        : undefined) ||
+      'http://localhost:8000'
+    );
+  }, []);
 
   const fetchLatestFromApi = async () => {
     setIsApiFetching(true);
@@ -158,7 +170,7 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
             setShowBubbleSpotVisual(true);
           }
         } else {
-          setApiError('Could not reach backend API at http://localhost:8000');
+          setApiError(`Could not reach backend API at ${realProviderRef.current.getHttpBaseUrl()}`);
         }
       }
     } catch (e: any) {
@@ -189,6 +201,7 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
       setInspectionTarget,
       viewMode,
       setViewMode,
+      backendUrl,
     }),
     [
       telemetry,
@@ -200,6 +213,7 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
       cameraPreset,
       inspectionTarget,
       viewMode,
+      backendUrl,
     ]
   );
 
