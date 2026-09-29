@@ -34,6 +34,7 @@ export function Metric({ label, value, detail, alert = false }: { label: string;
 export function Process() { const steps = [['01','Observe','Camera and sensors continuously watch the system.'],['02','Detect','Patterns are compared against normal operation.'],['03','Diagnose','The system estimates the fault condition.'],['04','Intervene','A corrective action can be initiated.'],['05','Verify','Recovery is checked before the loop closes.']]; return <div className="grid gap-5 md:grid-cols-5">{steps.map(([n,title,desc], i) => <div key={title} className="relative"><div className="mb-5 flex items-center gap-3"><span className="grid size-11 place-items-center rounded-full border border-teal bg-teal-light text-sm font-semibold text-teal">{n}</span>{i < 4 && <span className="hidden h-px flex-1 bg-border md:block" />}</div><h3 className="mb-2 font-semibold">{title}</h3><p className="text-sm leading-6 text-muted-foreground">{desc}</p></div>)}</div> }
 
 import { DigitalTwinView } from './twin/DigitalTwinView'
+import VirtualLabView from './virtual-lab/VirtualLabView'
 
 export function Twin({ dashboard = false }: { dashboard?: boolean }) { return <div className={`relative rounded-3xl border border-border bg-white ${dashboard ? 'p-5' : 'p-8'}`}><div className="mx-auto flex aspect-square max-w-[330px] items-center justify-center"><div className="relative grid size-32 place-items-center rounded-full border border-teal/40 bg-teal-light text-center"><div><div className="text-3xl font-semibold">98%</div><div className="text-[10px] uppercase tracking-wider text-muted-foreground">system health</div></div><div className="absolute -inset-5 rounded-full border border-dashed border-teal/30" /></div><div className="absolute left-0 top-10 rounded-xl border border-border bg-white p-3 text-xs shadow-sm"><div className="text-muted-foreground">Flow</div><strong>96.8%</strong></div><div className="absolute right-0 top-10 rounded-xl border border-border bg-white p-3 text-xs shadow-sm"><div className="text-muted-foreground">Pressure</div><strong>98.1%</strong></div><div className="absolute bottom-8 left-5 rounded-xl border border-border bg-white p-3 text-xs shadow-sm"><div className="text-muted-foreground">Bubble probability</div><strong>1.8%</strong></div><div className="absolute bottom-8 right-5 rounded-xl border border-border bg-white p-3 text-xs shadow-sm"><div className="text-muted-foreground">Pump</div><strong className="text-teal">ACTIVE</strong></div></div>{dashboard && <div className="mt-4 pt-3 border-t border-border flex items-center justify-between"><span className="text-xs text-muted-foreground">3D Microfluidic Twin</span><Link href="/dashboard/twin" className="text-xs font-semibold text-teal hover:underline flex items-center gap-1">Launch 3D Twin <ArrowRight className="size-3" /></Link></div>}</div> }
 
@@ -205,28 +206,11 @@ export function DashboardShell() {
                 Open Full Screen <ArrowRight className="size-3.5" />
               </Link>
             </div>
-            <DigitalTwinView fullscreen={false} initialEnvironmentMode="HARDWARE_TWIN" />
+            <DigitalTwinView />
           </div>
         ) : active === 'Virtual Lab' ? (
           <div className="mx-auto max-w-7xl p-5 lg:p-8">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-purple-600">
-                  In-Silico Organ Simulation & Experimental Parameters
-                </p>
-                <h1 className="mt-1 text-3xl font-semibold tracking-tight">Virtual Lab Simulation</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Configure drug concentrations, flow rates, and run in-silico experiments on the 3D chip.
-                </p>
-              </div>
-              <Link
-                href="/dashboard/virtual-lab"
-                className="rounded-full bg-purple-700 px-4 py-2 text-xs font-medium text-white hover:bg-purple-800 flex items-center gap-1.5"
-              >
-                Open Full Screen <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-            <DigitalTwinView fullscreen={false} initialEnvironmentMode="VIRTUAL_LAB" />
+            <VirtualLabView />
           </div>
         ) : (
           <div className="mx-auto max-w-7xl p-5 lg:p-8">
