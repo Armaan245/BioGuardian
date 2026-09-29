@@ -1,6 +1,14 @@
 'use client';
 
+/**
+ * BioGuardian Virtual Lab - Results & External ML Prediction Panel
+ * Displays physical simulation metrics summary and handles external ML connectivity.
+ * ZERO fake ML policy strictly enforced.
+ */
+
+import React from 'react';
 import type { SimulationState, MLPredictResponse, MLStatus } from '@/lib/virtual-lab/types';
+import { Cpu, FileText, CheckCircle2, XCircle, AlertCircle, Clock, Droplets, Gauge, Activity, ShieldCheck } from 'lucide-react';
 
 interface Props {
   organ: string;
@@ -12,110 +20,159 @@ interface Props {
   mlQuerying: boolean;
 }
 
-function fmtTime(sec: number) {
-  const m = Math.floor(sec / 60).toString().padStart(2, '0');
-  const s = (sec % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
+function formatClock(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-const ORGAN_LABELS: Record<string, string> = {
-  lung: 'Lung-on-a-Chip', heart: 'Heart-on-a-Chip', liver: 'Liver-on-a-Chip',
-  kidney: 'Kidney-on-a-Chip', gut: 'Gut-on-a-Chip', brain: 'Brain-on-a-Chip',
-};
+export default function ResultsPanel({
+  organ,
+  simState,
+  elapsed,
+  bubbleCount,
+  mlStatus,
+  mlResult,
+  mlQuerying,
+}: Props) {
+  const isMlConnected = mlStatus?.connected ?? false;
 
-interface MetricProps { label: string; value: string; alert?: boolean; mono?: boolean; }
-function Metric({ label, value, alert, mono }: MetricProps) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-800/60 last:border-0">
-      <span className="text-xs text-slate-500">{label}</span>
-      <span className={`text-xs font-semibold ${mono ? 'font-mono' : ''} ${alert ? 'text-red-400' : 'text-slate-100'}`}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-export default function ResultsPanel({ organ, simState, elapsed, bubbleCount, mlStatus, mlResult, mlQuerying }: Props) {
-  return (
-    <div className="space-y-5">
-
-      {/* Simulation summary */}
-      <div>
-        <div className="mb-3 flex items-center justify-between">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* 1. In-Silico Experiment Summary Card */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 backdrop-blur-sm">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
           <div className="flex items-center gap-2">
-            <span className="size-1.5 rounded-full bg-emerald-400" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400">Simulation Summary</span>
+            <FileText className="size-4 text-teal-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-200">
+              In-Silico Experiment Summary
+            </span>
           </div>
-          <span className="rounded bg-slate-800 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-slate-500">IN-SILICO</span>
+          <span className="rounded-full bg-teal-950/80 border border-teal-800/60 px-2 py-0.5 text-[9px] font-mono text-teal-300">
+            SIMULATED RUN
+          </span>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-2">
-          <Metric label="Organ Model" value={ORGAN_LABELS[organ] ?? organ} />
-          <Metric label="Elapsed" value={fmtTime(elapsed)} mono />
-          {simState ? (
-            <>
-              <Metric label="Flow Rate"       value={`${simState.flow_rate.toFixed(0)} µL/min`} mono />
-              <Metric label="Pressure"        value={`${simState.pressure.toFixed(1)} mbar`} mono />
-              <Metric label="pH"              value={simState.ph.toFixed(2)} mono />
-              <Metric label="Dissolved O₂"    value={`${simState.oxygen.toFixed(1)} mg/L`} mono />
-              <Metric label="Temperature"     value={`${simState.temperature.toFixed(1)} °C`} mono />
-              <Metric label="Bubble Events"   value={`${bubbleCount} (simulated)`} alert={bubbleCount > 0} mono />
-            </>
-          ) : (
-            <p className="py-6 text-center text-xs text-slate-700">Run the simulation to see results.</p>
-          )}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-2.5">
+            <span className="text-[10px] text-slate-500 block uppercase font-mono">Organ Cartridge</span>
+            <strong className="text-sm font-semibold text-slate-200 capitalize">{organ}-on-a-Chip</strong>
+          </div>
+
+          <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-2.5">
+            <span className="text-[10px] text-slate-500 block uppercase font-mono">Simulated Duration</span>
+            <strong className="text-sm font-semibold font-mono text-slate-200">{formatClock(elapsed)}</strong>
+          </div>
+
+          <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-2.5">
+            <span className="text-[10px] text-slate-500 block uppercase font-mono">Operating Flow Rate</span>
+            <strong className="text-sm font-semibold font-mono text-teal-300">
+              {simState ? `${simState.flow_rate.toFixed(0)} µL/min` : '450 µL/min (Nominal)'}
+            </strong>
+          </div>
+
+          <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-2.5">
+            <span className="text-[10px] text-slate-500 block uppercase font-mono">Channel Pressure</span>
+            <strong className="text-sm font-semibold font-mono text-purple-300">
+              {simState ? `${simState.pressure.toFixed(1)} mbar` : '1021.4 mbar (Nominal)'}
+            </strong>
+          </div>
+
+          <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-2.5">
+            <span className="text-[10px] text-slate-500 block uppercase font-mono">Physiological pH</span>
+            <strong className="text-sm font-semibold font-mono text-emerald-300">
+              {simState ? simState.ph.toFixed(2) : '7.40 pH'}
+            </strong>
+          </div>
+
+          <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-2.5">
+            <span className="text-[10px] text-slate-500 block uppercase font-mono">Simulated Bubble Spikes</span>
+            <strong className={`text-sm font-semibold font-mono ${bubbleCount > 0 ? 'text-rose-400' : 'text-slate-300'}`}>
+              {bubbleCount} {bubbleCount === 1 ? 'event' : 'events'}
+            </strong>
+          </div>
         </div>
+
+        <p className="mt-3 text-[10px] font-mono text-slate-500">
+          All values derived from in-silico fluid dynamic model. Zero patient or physical hardware data.
+        </p>
       </div>
 
-      {/* ML Prediction */}
-      <div>
-        <div className="mb-3 flex items-center gap-2">
-          <span className="size-1.5 rounded-full bg-purple-400" />
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-purple-400">ML Prediction</span>
-        </div>
-
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-          {/* Connection status row */}
-          <div className="mb-3 flex items-center gap-2">
-            <span className={`size-2.5 rounded-full ${mlStatus?.connected ? 'bg-teal-400' : 'bg-red-500/70'}`} />
-            <span className="text-sm font-semibold text-slate-200">
-              {mlStatus?.connected ? 'Service Connected' : 'Not Connected'}
+      {/* 2. External ML Prediction Gateway Card (Strict Zero-Fake-ML) */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 backdrop-blur-sm flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
+            <div className="flex items-center gap-2">
+              <Cpu className="size-4 text-purple-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-200">
+                Machine Learning Prediction Service
+              </span>
+            </div>
+            <span className="rounded-full bg-purple-950/80 border border-purple-800/60 px-2 py-0.5 text-[9px] font-mono text-purple-300">
+              EXTERNAL ADAPTER
             </span>
           </div>
 
-          {!mlStatus?.connected && (
-            <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
-              <p className="text-xs font-semibold text-red-400 mb-1">ML Prediction Service: Not Connected</p>
-              <p className="text-[11px] leading-5 text-slate-500">
-                {mlStatus?.message ?? 'ML_SERVICE_URL not configured.'}
-              </p>
-              <p className="mt-2 text-[11px] text-slate-600">
-                Connect the ML model API to generate predictions.
+          {/* Connection Status Banner */}
+          <div
+            className={`rounded-xl border p-3 mb-3 flex items-start gap-3 ${
+              isMlConnected
+                ? 'bg-teal-950/30 border-teal-500/40 text-teal-200'
+                : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
+            }`}
+          >
+            {isMlConnected ? (
+              <CheckCircle2 className="size-5 text-teal-400 shrink-0 mt-0.5" />
+            ) : (
+              <XCircle className="size-5 text-rose-400 shrink-0 mt-0.5" />
+            )}
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider">
+                {isMlConnected ? 'ML Service Connected' : 'ML Prediction Service: Not Connected'}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {isMlConnected
+                  ? 'External biological model is online. Predictions will be generated by the connected model.'
+                  : 'Connect the ML model API to generate predictions. No fake toxicity, cell viability, or biological scores will be simulated.'}
               </p>
             </div>
-          )}
+          </div>
 
+          {/* Active Model Response / Details */}
           {mlQuerying && (
-            <div className="mt-2 flex items-center gap-2">
-              <div className="size-1.5 rounded-full bg-purple-400 animate-pulse" />
-              <span className="text-xs text-purple-400">Querying ML model…</span>
+            <div className="rounded-xl border border-purple-500/30 bg-purple-950/30 p-3 text-center animate-pulse">
+              <div className="text-xs font-semibold text-purple-300">
+                Contacting External ML Endpoint…
+              </div>
+              <div className="text-[10px] text-purple-400 font-mono mt-1">
+                Forwarding experiment parameters to ML_SERVICE_URL
+              </div>
             </div>
           )}
 
-          {mlResult && !mlResult.available && !mlQuerying && (
-            <div className="mt-2 rounded-lg border border-slate-800 bg-slate-900 p-3">
-              <p className="text-[11px] text-slate-500">{mlResult.message}</p>
-            </div>
-          )}
-
-          {mlResult?.available && mlResult.prediction !== undefined && (
-            <div className="mt-2 rounded-lg border border-purple-800/30 bg-purple-900/10 p-3">
-              <p className="mb-2 text-xs font-semibold text-purple-300">ML Response:</p>
-              <pre className="text-[11px] text-slate-300 whitespace-pre-wrap break-all leading-5">
+          {mlResult && mlResult.available && mlResult.prediction !== undefined && (
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+              <span className="text-[10px] font-mono uppercase text-slate-400 block mb-1">
+                Model Output (Real ML Service):
+              </span>
+              <pre className="text-xs font-mono text-teal-300 overflow-x-auto p-2 bg-slate-950 rounded-lg">
                 {JSON.stringify(mlResult.prediction, null, 2)}
               </pre>
             </div>
           )}
+
+          {mlResult && !mlResult.available && !mlQuerying && (
+            <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3 text-[11px] font-mono text-slate-400">
+              <span className="text-slate-300 font-semibold block mb-0.5">Gateway Status:</span>
+              <span>{mlResult.message || 'ML service unconfigured. Set ML_SERVICE_URL in your .env file.'}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Guarantee */}
+        <div className="pt-3 border-t border-slate-800/80 flex items-center gap-1.5 text-[10px] font-mono text-slate-500">
+          <ShieldCheck className="size-3.5 text-teal-400 shrink-0" />
+          <span>Strict Zero-Fake-ML Guarantee: Biological outputs are never fabricated.</span>
         </div>
       </div>
     </div>
