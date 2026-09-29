@@ -65,6 +65,7 @@ export function DashboardShell() {
     ['Live System', Waves],
     ['Faults', Zap],
     ['Digital Twin', CircleDot],
+    ['Virtual Lab', FlaskConical],
     ['Devices', Microscope],
     ['Logs', Activity],
     ['Settings', SlidersHorizontal],
@@ -204,7 +205,28 @@ export function DashboardShell() {
                 Open Full Screen <ArrowRight className="size-3.5" />
               </Link>
             </div>
-            <DigitalTwinView />
+            <DigitalTwinView fullscreen={false} initialEnvironmentMode="HARDWARE_TWIN" />
+          </div>
+        ) : active === 'Virtual Lab' ? (
+          <div className="mx-auto max-w-7xl p-5 lg:p-8">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-purple-600">
+                  In-Silico Organ Simulation & Experimental Parameters
+                </p>
+                <h1 className="mt-1 text-3xl font-semibold tracking-tight">Virtual Lab Simulation</h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Configure drug concentrations, flow rates, and run in-silico experiments on the 3D chip.
+                </p>
+              </div>
+              <Link
+                href="/dashboard/virtual-lab"
+                className="rounded-full bg-purple-700 px-4 py-2 text-xs font-medium text-white hover:bg-purple-800 flex items-center gap-1.5"
+              >
+                Open Full Screen <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
+            <DigitalTwinView fullscreen={false} initialEnvironmentMode="VIRTUAL_LAB" />
           </div>
         ) : (
           <div className="mx-auto max-w-7xl p-5 lg:p-8">
