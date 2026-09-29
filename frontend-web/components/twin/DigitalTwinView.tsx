@@ -24,7 +24,7 @@ function DigitalTwinViewContent({
 }: DigitalTwinViewProps) {
   const [telemetryDrawerOpen, setTelemetryDrawerOpen] = useState(false);
   const [bubbleDrawerOpen, setBubbleDrawerOpen] = useState(false);
-  const [labDrawerOpen, setLabDrawerOpen] = useState(initialEnvironmentMode === 'VIRTUAL_LAB');
+  const [labDrawerOpen, setLabDrawerOpen] = useState(false);
 
   return (
     <div
