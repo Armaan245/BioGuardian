@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Activity,
   AlertOctagon,
@@ -46,8 +47,6 @@ interface DigitalTwinHUDProps {
   setTelemetryDrawerOpen: (open: boolean) => void;
   bubbleDrawerOpen: boolean;
   setBubbleDrawerOpen: (open: boolean) => void;
-  labDrawerOpen: boolean;
-  setLabDrawerOpen: (open: boolean) => void;
 }
 
 export function DigitalTwinHUD({
@@ -55,8 +54,6 @@ export function DigitalTwinHUD({
   setTelemetryDrawerOpen,
   bubbleDrawerOpen,
   setBubbleDrawerOpen,
-  labDrawerOpen,
-  setLabDrawerOpen,
 }: DigitalTwinHUDProps) {
   const {
     telemetry,
@@ -406,20 +403,19 @@ export function DigitalTwinHUD({
           ))}
         </div>
 
-        {/* Right: Drawer Triggers */}
+        {/* Right: Triggers & Navigation */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Virtual Lab Deck Button */}
-          <button
-            onClick={() => setLabDrawerOpen(!labDrawerOpen)}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-medium backdrop-blur-md shadow-lg transition flex items-center gap-1.5 ${
-              labDrawerOpen
-                ? 'bg-purple-600/30 border-purple-500 text-purple-300'
-                : 'bg-[#090e1a]/85 border-purple-500/30 text-purple-300 hover:border-purple-500/50'
-            }`}
+          {/* Dedicated Virtual Lab Simulator Page Link */}
+          <Link
+            href="/dashboard/virtual-lab"
+            className="px-3 py-1.5 rounded-xl border border-purple-500/40 bg-purple-950/70 hover:bg-purple-900/60 text-purple-200 text-xs font-semibold backdrop-blur-md shadow-lg transition flex items-center gap-2 group"
           >
-            <FlaskConical className="size-3.5 text-purple-400" />
-            <span>Virtual Lab Deck</span>
-          </button>
+            <FlaskConical className="size-3.5 text-purple-400 group-hover:scale-110 transition-transform" />
+            <span>Virtual Lab Studio</span>
+            <span className="rounded bg-purple-900/80 px-1.5 py-0.5 text-[9px] font-mono font-bold text-purple-200 uppercase">
+              SIM
+            </span>
+          </Link>
 
           {/* Live Telemetry Drawer Button */}
           <button

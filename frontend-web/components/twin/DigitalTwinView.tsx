@@ -24,7 +24,6 @@ function DigitalTwinViewContent({
 }: DigitalTwinViewProps) {
   const [telemetryDrawerOpen, setTelemetryDrawerOpen] = useState(false);
   const [bubbleDrawerOpen, setBubbleDrawerOpen] = useState(false);
-  const [labDrawerOpen, setLabDrawerOpen] = useState(false);
 
   return (
     <div
@@ -43,8 +42,6 @@ function DigitalTwinViewContent({
         setTelemetryDrawerOpen={setTelemetryDrawerOpen}
         bubbleDrawerOpen={bubbleDrawerOpen}
         setBubbleDrawerOpen={setBubbleDrawerOpen}
-        labDrawerOpen={labDrawerOpen}
-        setLabDrawerOpen={setLabDrawerOpen}
       />
 
       {/* 3. Collapsible Glass Drawers */}
@@ -53,8 +50,6 @@ function DigitalTwinViewContent({
         setTelemetryDrawerOpen={setTelemetryDrawerOpen}
         bubbleDrawerOpen={bubbleDrawerOpen}
         setBubbleDrawerOpen={setBubbleDrawerOpen}
-        labDrawerOpen={labDrawerOpen}
-        setLabDrawerOpen={setLabDrawerOpen}
       />
 
       {/* 4. On-Screen Precision Smooth Zoom Controller */}
