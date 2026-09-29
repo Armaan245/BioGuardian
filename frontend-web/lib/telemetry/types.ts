@@ -16,9 +16,6 @@ export interface BioGuardianTelemetry {
   source: 'SIMULATION' | 'REAL DEVICE';
 }
 
-
-
-
 export type ConnectionStatus =
   | 'CONNECTED'
   | 'CONNECTING'
@@ -28,9 +25,17 @@ export type ConnectionStatus =
 
 export type ProviderMode = 'mock' | 'real';
 
-export type CameraPreset = 'FULL_SYSTEM' | 'INLET_OBSERVATION' | 'ORGAN_ON_CHIP';
+export type TwinEnvironmentMode = 'HARDWARE_TWIN' | 'VIRTUAL_LAB';
 
-export type InspectionTarget = 'ORGAN_ON_CHIP' | 'INLET_OBSERVATION' | null;
+export type CameraPreset =
+  | 'FULL_SYSTEM'
+  | 'RESERVOIRS'
+  | 'BUBBLE_TRAP'
+  | 'INLET_OBSERVATION'
+  | 'ORGAN_ON_CHIP'
+  | 'SENSOR_MANIFOLD';
+
+export type InspectionTarget = 'ORGAN_ON_CHIP' | 'INLET_OBSERVATION' | 'BUBBLE_TRAP' | 'RESERVOIRS' | null;
 
 export type ViewMode = 'STANDARD' | 'CLEAN_3D' | 'PRESENTATION';
 
@@ -39,6 +44,18 @@ export interface TelemetryContextValue {
   status: ConnectionStatus;
   providerMode: ProviderMode;
   setProviderMode: (mode: ProviderMode) => void;
+  // Environment Mode (Physical Digital Twin vs In-Silico Virtual Lab Simulation)
+  environmentMode: TwinEnvironmentMode;
+  setEnvironmentMode: (mode: TwinEnvironmentMode) => void;
+  // Virtual Lab Simulation State
+  virtualLabOrgan: string;
+  setVirtualLabOrgan: (organId: string) => void;
+  virtualLabParameters: Record<string, any>;
+  setVirtualLabParameters: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+  isSimulating: boolean;
+  startSimulation: () => void;
+  pauseSimulation: () => void;
+  injectSimulatedBubble: () => void;
   // Simulation control actions
   triggerBubbleAlert: () => void;
   clearBubbleAlert: () => void;

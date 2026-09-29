@@ -1,5 +1,5 @@
-import VirtualLabView from '@/components/virtual-lab/VirtualLabView';
+import { DigitalTwinView } from '@/components/twin/DigitalTwinView';
 
 export default function DashboardVirtualLabPage() {
-  return <VirtualLabView />;
+  return <DigitalTwinView fullscreen initialEnvironmentMode="VIRTUAL_LAB" />;
 }

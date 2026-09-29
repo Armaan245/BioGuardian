@@ -2,8 +2,9 @@
 
 /**
  * BioGuardian Telemetry Context & Provider Bridge
- * Provides seamless hot-swapping between MockTelemetryProvider (SIMULATION)
- * and RealTelemetryProvider (REAL DEVICE WebSocket).
+ * Supports dual operating modes:
+ *  1. HARDWARE_TWIN: Real device telemetry (ESP32 via WebSocket) or hardware simulation.
+ *  2. VIRTUAL_LAB: In-silico Organ-on-Chip experimental simulation with parameter tuning & external ML Gateway.
  */
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,12 +17,22 @@ import {
   InspectionTarget,
   ProviderMode,
   TelemetryContextValue,
+  TwinEnvironmentMode,
   ViewMode,
 } from './types';
 
 const TelemetryContext = createContext<TelemetryContextValue | null>(null);
 
-function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
+interface TelemetryProviderProps {
+  children: React.ReactNode;
+  initialEnvironmentMode?: TwinEnvironmentMode;
+}
+
+function TelemetryProviderInner({
+  children,
+  initialEnvironmentMode = 'HARDWARE_TWIN',
+}: TelemetryProviderProps) {
+  const [environmentMode, setEnvironmentMode] = useState<TwinEnvironmentMode>(initialEnvironmentMode);
   const [providerMode, setProviderMode] = useState<ProviderMode>('mock');
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>('FULL_SYSTEM');
   const [inspectionTarget, setInspectionTarget] = useState<InspectionTarget>(null);
@@ -29,6 +40,19 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
   const [showBubbleSpotVisual, setShowBubbleSpotVisual] = useState<boolean>(false);
   const [isApiFetching, setIsApiFetching] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Virtual Lab Simulation State
+  const [virtualLabOrgan, setVirtualLabOrgan] = useState<string>('lung');
+  const [virtualLabParameters, setVirtualLabParameters] = useState<Record<string, any>>({
+    drug_concentration: 50,
+    exposure_duration: 24,
+    flow_rate: 450,
+    ph: 7.4,
+    oxygen: 6.5,
+    temperature: 37.0,
+    stretch_frequency: 0.2,
+  });
+  const [isSimulating, setIsSimulating] = useState<boolean>(true);
 
   const mockProviderRef = useRef<MockTelemetryProvider | null>(null);
   const realProviderRef = useRef<RealTelemetryProvider | null>(null);
@@ -60,8 +84,15 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Subscribe to active provider
+  // Subscribe to active hardware provider when in HARDWARE_TWIN mode
   useEffect(() => {
+    if (environmentMode === 'VIRTUAL_LAB') {
+      mockProviderRef.current?.stop();
+      realProviderRef.current?.disconnect();
+      setStatus('SIMULATION_ACTIVE');
+      return;
+    }
+
     let unsubscribeTelemetry: (() => void) | undefined;
     let unsubscribeStatus: (() => void) | undefined;
 
@@ -99,10 +130,50 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
       unsubscribeTelemetry?.();
       unsubscribeStatus?.();
     };
-  }, [providerMode]);
+  }, [providerMode, environmentMode]);
+
+  // Synchronize Virtual Lab parameters to telemetry stream when active
+  useEffect(() => {
+    if (environmentMode !== 'VIRTUAL_LAB') return;
+
+    const interval = setInterval(() => {
+      if (!isSimulating) return;
+
+      const baseFlow = Number(virtualLabParameters.flow_rate) || 450;
+      const basePh = Number(virtualLabParameters.ph) || 7.4;
+      const baseOxygen = Number(virtualLabParameters.oxygen) || 6.5;
+      const baseTemp = Number(virtualLabParameters.temperature) || 37.0;
+
+      // Realistic physical in-silico microfluidic noise (no fake ML)
+      const noise = (Math.random() - 0.5) * 2;
+      const calcPressure = baseFlow * 2.27 + noise;
+
+      setTelemetry((prev) => ({
+        ...prev,
+        device_id: `In-Silico [${virtualLabOrgan.toUpperCase()}-ON-CHIP]`,
+        timestamp: new Date().toISOString(),
+        flow_rate: Math.max(0, baseFlow + noise * 0.5),
+        pressure: Math.round(calcPressure * 10) / 10,
+        ph: Math.round((basePh + (Math.random() - 0.5) * 0.04) * 100) / 100,
+        oxygen: Math.round((baseOxygen + (Math.random() - 0.5) * 0.08) * 100) / 100,
+        temperature: Math.round((baseTemp + (Math.random() - 0.5) * 0.1) * 10) / 10,
+        source: 'SIMULATION',
+      }));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [environmentMode, isSimulating, virtualLabOrgan, virtualLabParameters]);
 
   const triggerBubbleAlert = () => {
     setShowBubbleSpotVisual(true);
+    if (environmentMode === 'VIRTUAL_LAB') {
+      setTelemetry((prev) => ({
+        ...prev,
+        bubble_detected: true,
+        bubble_probability: 0.94,
+      }));
+      return;
+    }
     if (providerMode === 'mock') {
       mockProviderRef.current?.triggerBubble();
     } else {
@@ -112,6 +183,14 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
 
   const clearBubbleAlert = () => {
     setShowBubbleSpotVisual(false);
+    if (environmentMode === 'VIRTUAL_LAB') {
+      setTelemetry((prev) => ({
+        ...prev,
+        bubble_detected: false,
+        bubble_probability: 0.02,
+      }));
+      return;
+    }
     if (providerMode === 'mock') {
       mockProviderRef.current?.clearBubble();
     } else {
@@ -124,28 +203,40 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
     if (focusCamera) {
       setCameraPreset('INLET_OBSERVATION');
     }
-    if (providerMode === 'mock') {
-      mockProviderRef.current?.triggerBubble();
-    } else {
-      realProviderRef.current?.triggerBackendBubbleSpike();
-    }
+    triggerBubbleAlert();
   };
 
   const clearBubbleSpot = () => {
     setShowBubbleSpotVisual(false);
-    if (providerMode === 'mock') {
-      mockProviderRef.current?.clearBubble();
-    } else {
-      realProviderRef.current?.clearBackendBubble();
-    }
+    clearBubbleAlert();
   };
 
   const setSimulationFlowRate = (rate: number) => {
+    if (environmentMode === 'VIRTUAL_LAB') {
+      setVirtualLabParameters((prev) => ({ ...prev, flow_rate: rate }));
+      setTelemetry((prev) => ({ ...prev, flow_rate: rate }));
+      return;
+    }
     if (providerMode === 'mock') {
       mockProviderRef.current?.setFlowRate(rate);
     } else {
       realProviderRef.current?.setBackendFlowRate(rate);
     }
+  };
+
+  const startSimulation = () => {
+    setIsSimulating(true);
+  };
+
+  const pauseSimulation = () => {
+    setIsSimulating(false);
+  };
+
+  const injectSimulatedBubble = () => {
+    triggerBubbleSpot(true);
+    setTimeout(() => {
+      clearBubbleSpot();
+    }, 6000);
   };
 
   const backendUrl = useMemo(() => {
@@ -186,6 +277,16 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
       status,
       providerMode,
       setProviderMode,
+      environmentMode,
+      setEnvironmentMode,
+      virtualLabOrgan,
+      setVirtualLabOrgan,
+      virtualLabParameters,
+      setVirtualLabParameters,
+      isSimulating,
+      startSimulation,
+      pauseSimulation,
+      injectSimulatedBubble,
       triggerBubbleAlert,
       clearBubbleAlert,
       triggerBubbleSpot,
@@ -207,6 +308,10 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
       telemetry,
       status,
       providerMode,
+      environmentMode,
+      virtualLabOrgan,
+      virtualLabParameters,
+      isSimulating,
       showBubbleSpotVisual,
       isApiFetching,
       apiError,
@@ -220,12 +325,16 @@ function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
   return <TelemetryContext.Provider value={value}>{children}</TelemetryContext.Provider>;
 }
 
-export function TelemetryProvider({ children }: { children: React.ReactNode }) {
+export function TelemetryProvider({ children, initialEnvironmentMode }: TelemetryProviderProps) {
   const existing = useContext(TelemetryContext);
   if (existing) {
     return <>{children}</>;
   }
-  return <TelemetryProviderInner>{children}</TelemetryProviderInner>;
+  return (
+    <TelemetryProviderInner initialEnvironmentMode={initialEnvironmentMode}>
+      {children}
+    </TelemetryProviderInner>
+  );
 }
 
 export function useTelemetry(): TelemetryContextValue {

@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * BioGuardian Complete 3D Digital Twin View
- * Unifies the WebGL 3D Canvas, SolarEye-inspired Glass HUD, and Telemetry Drawers.
+ * BioGuardian Complete 3D Digital Twin & Virtual Lab View
+ * Unifies the WebGL 3D Canvas, SolarEye-inspired Glass HUD, and Drawers (Telemetry, Bubble, and Virtual Lab Deck).
  */
 
 import React, { useState } from 'react';
@@ -11,14 +11,20 @@ import { DigitalTwinHUD } from './DigitalTwinHUD';
 import { DigitalTwinZoomControl } from './DigitalTwinZoomControl';
 import { TelemetryDrawers } from './TelemetryDrawers';
 import { TelemetryProvider } from '@/lib/telemetry/TelemetryContext';
+import { TwinEnvironmentMode } from '@/lib/telemetry/types';
 
 interface DigitalTwinViewProps {
   fullscreen?: boolean;
+  initialEnvironmentMode?: TwinEnvironmentMode;
 }
 
-function DigitalTwinViewContent({ fullscreen = false }: DigitalTwinViewProps) {
+function DigitalTwinViewContent({
+  fullscreen = false,
+  initialEnvironmentMode = 'HARDWARE_TWIN',
+}: DigitalTwinViewProps) {
   const [telemetryDrawerOpen, setTelemetryDrawerOpen] = useState(false);
   const [bubbleDrawerOpen, setBubbleDrawerOpen] = useState(false);
+  const [labDrawerOpen, setLabDrawerOpen] = useState(initialEnvironmentMode === 'VIRTUAL_LAB');
 
   return (
     <div
@@ -37,6 +43,8 @@ function DigitalTwinViewContent({ fullscreen = false }: DigitalTwinViewProps) {
         setTelemetryDrawerOpen={setTelemetryDrawerOpen}
         bubbleDrawerOpen={bubbleDrawerOpen}
         setBubbleDrawerOpen={setBubbleDrawerOpen}
+        labDrawerOpen={labDrawerOpen}
+        setLabDrawerOpen={setLabDrawerOpen}
       />
 
       {/* 3. Collapsible Glass Drawers */}
@@ -45,6 +53,8 @@ function DigitalTwinViewContent({ fullscreen = false }: DigitalTwinViewProps) {
         setTelemetryDrawerOpen={setTelemetryDrawerOpen}
         bubbleDrawerOpen={bubbleDrawerOpen}
         setBubbleDrawerOpen={setBubbleDrawerOpen}
+        labDrawerOpen={labDrawerOpen}
+        setLabDrawerOpen={setLabDrawerOpen}
       />
 
       {/* 4. On-Screen Precision Smooth Zoom Controller */}
@@ -55,10 +65,16 @@ function DigitalTwinViewContent({ fullscreen = false }: DigitalTwinViewProps) {
   );
 }
 
-export function DigitalTwinView({ fullscreen = false }: DigitalTwinViewProps) {
+export function DigitalTwinView({
+  fullscreen = false,
+  initialEnvironmentMode = 'HARDWARE_TWIN',
+}: DigitalTwinViewProps) {
   return (
-    <TelemetryProvider>
-      <DigitalTwinViewContent fullscreen={fullscreen} />
+    <TelemetryProvider initialEnvironmentMode={initialEnvironmentMode}>
+      <DigitalTwinViewContent
+        fullscreen={fullscreen}
+        initialEnvironmentMode={initialEnvironmentMode}
+      />
     </TelemetryProvider>
   );
 }
