@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Activity, AlertOctagon, ArrowRight, Bell, Check, ChevronRight, CircleDot, Gauge, Menu, Microscope, Radio, RotateCcw, ShieldCheck, SlidersHorizontal, Sparkles, Waves, Wifi, X, Zap } from 'lucide-react'
+import { Activity, AlertOctagon, ArrowRight, Bell, Check, ChevronRight, CircleDot, FlaskConical, Gauge, Menu, Microscope, Radio, RotateCcw, ShieldCheck, SlidersHorizontal, Sparkles, Waves, Wifi, X, Zap } from 'lucide-react'
 import { useTelemetry } from '@/lib/telemetry/TelemetryContext'
 
 export const team = [
@@ -88,6 +88,21 @@ export function DashboardShell() {
             </button>
           ))}
         </div>
+
+        {/* Virtual Lab — dedicated simulation route */}
+        <div className="mt-3 border-t border-border pt-3">
+          <Link
+            href="/dashboard/virtual-lab"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-muted-foreground hover:bg-purple-50 hover:text-purple-700 transition-colors"
+          >
+            <FlaskConical className="size-4 text-purple-500" />
+            <span>Virtual Lab</span>
+            <span className="ml-auto rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-600">
+              SIM
+            </span>
+          </Link>
+        </div>
+
         <div className="mt-auto rounded-2xl bg-teal-light p-4">
           <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-teal">
             <span className="size-2 rounded-full bg-teal" />

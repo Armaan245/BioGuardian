@@ -24,6 +24,7 @@ from .database.repository import (
     get_telemetry_repository,
 )
 from .routers.telemetry import router as telemetry_router
+from .routers.virtual_lab import router as virtual_lab_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -182,6 +183,7 @@ app.add_middleware(
 )
 
 app.include_router(telemetry_router)
+app.include_router(virtual_lab_router, prefix="/api/virtual-lab", tags=["virtual-lab"])
 
 
 @app.get("/")
