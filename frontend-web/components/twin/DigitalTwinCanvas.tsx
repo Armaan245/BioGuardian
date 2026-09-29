@@ -70,8 +70,8 @@ export function DigitalTwinCanvas() {
       0.1,
       1000
     );
-    // Initial camera position for comprehensive full-system view (shows reservoirs, Y-chip, OoC, manifold, waste)
-    camera.position.set(-2, 18, 88);
+    // Initial camera position for comprehensive full-system view (framing reservoirs, Y-chip, OoC, manifold, waste)
+    camera.position.set(-2, 18, 92);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -91,7 +91,7 @@ export function DigitalTwinCanvas() {
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 + 0.05;
     controls.minDistance = 8;
-    controls.maxDistance = 160;
+    controls.maxDistance = 140;
     controls.target.set(-2, 0, 0);
 
     // ==========================================
@@ -1128,12 +1128,12 @@ export function DigitalTwinCanvas() {
     // 12. CAMERA PRESETS & TRANSITIONS
     // ==========================================
     const PRESETS = {
-      FULL_SYSTEM: { pos: new THREE.Vector3(-2, 18, 88), target: new THREE.Vector3(-2, 0, 0) },
-      RESERVOIRS: { pos: new THREE.Vector3(-62, 8, 28), target: new THREE.Vector3(-62, 3, 0) },
-      BUBBLE_TRAP: { pos: new THREE.Vector3(yChipCenterX, 8, 28), target: new THREE.Vector3(yChipCenterX, 0, 0) },
-      INLET_OBSERVATION: { pos: new THREE.Vector3(obsX, 5, 22), target: new THREE.Vector3(obsX, 0, 0) },
-      ORGAN_ON_CHIP: { pos: new THREE.Vector3(chipCenterX, 8, 28), target: new THREE.Vector3(chipCenterX, 0, 0) },
-      SENSOR_MANIFOLD: { pos: new THREE.Vector3(52, 7, 28), target: new THREE.Vector3(52, 1, 0) },
+      FULL_SYSTEM: { pos: new THREE.Vector3(-2, 18, 92), target: new THREE.Vector3(-2, 0, 0) },
+      RESERVOIRS: { pos: new THREE.Vector3(-62, 10, 35), target: new THREE.Vector3(-62, 3, 0) },
+      BUBBLE_TRAP: { pos: new THREE.Vector3(yChipCenterX, 10, 32), target: new THREE.Vector3(yChipCenterX, 0, 0) },
+      INLET_OBSERVATION: { pos: new THREE.Vector3(obsX, 6, 26), target: new THREE.Vector3(obsX, 0, 0) },
+      ORGAN_ON_CHIP: { pos: new THREE.Vector3(chipCenterX, 8, 30), target: new THREE.Vector3(chipCenterX, 0, 0) },
+      SENSOR_MANIFOLD: { pos: new THREE.Vector3(56, 8, 32), target: new THREE.Vector3(56, 1, 0) },
     };
 
     let isTransitioningPreset = false;
@@ -1148,8 +1148,8 @@ export function DigitalTwinCanvas() {
       presetStartPos.copy(camera.position);
       presetStartTarget.copy(controls.target);
 
-      presetTargetPos.copy(p.pos);
       presetTargetTarget.copy(p.target);
+      presetTargetPos.copy(p.pos);
 
       isTransitioningPreset = true;
       presetProgress = 0;
@@ -1165,16 +1165,14 @@ export function DigitalTwinCanvas() {
     // 13. ANIMATION & TELEMETRY FLOW LOOP
     // ==========================================
     let animationFrameId: number;
-    let lastTime = performance.now();
+    const clock = new THREE.Clock();
     let bubbleLocalX = obsX - 8.0;
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      const now = performance.now();
-      const delta = Math.min((now - lastTime) / 1000, 0.1);
-      lastTime = now;
-      const time = now / 1000;
+      const delta = Math.min(clock.getDelta(), 0.1);
+      const time = clock.getElapsedTime();
 
       // Check for camera preset change
       if (presetRef.current !== prevPreset) {

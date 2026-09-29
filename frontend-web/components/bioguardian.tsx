@@ -66,6 +66,7 @@ export function DashboardShell() {
     ['Live System', Waves],
     ['Faults', Zap],
     ['Digital Twin', CircleDot],
+    ['Virtual Lab', FlaskConical],
     ['Devices', Microscope],
     ['Logs', Activity],
     ['Settings', SlidersHorizontal],
@@ -90,18 +91,15 @@ export function DashboardShell() {
           ))}
         </div>
 
-        {/* Virtual Lab — dedicated in-silico simulation studio */}
-        <div className="mt-4 border-t border-border pt-4">
-          <p className="px-3 text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
-            In-Silico Simulation
-          </p>
+        {/* Virtual Lab — dedicated simulation route */}
+        <div className="mt-3 border-t border-border pt-3">
           <Link
             href="/dashboard/virtual-lab"
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 transition shadow-sm border border-purple-200/60"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-muted-foreground hover:bg-purple-50 hover:text-purple-700 transition-colors"
           >
-            <FlaskConical className="size-4 text-purple-600" />
-            <span>Virtual Lab Studio</span>
-            <span className="ml-auto rounded-full bg-purple-200 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-800">
+            <FlaskConical className="size-4 text-purple-500" />
+            <span>Virtual Lab</span>
+            <span className="ml-auto rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-600">
               SIM
             </span>
           </Link>
@@ -209,6 +207,10 @@ export function DashboardShell() {
               </Link>
             </div>
             <DigitalTwinView />
+          </div>
+        ) : active === 'Virtual Lab' ? (
+          <div className="mx-auto max-w-7xl p-5 lg:p-8">
+            <VirtualLabView />
           </div>
         ) : (
           <div className="mx-auto max-w-7xl p-5 lg:p-8">

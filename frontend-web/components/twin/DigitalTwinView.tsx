@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * BioGuardian Complete 3D Digital Twin & Virtual Lab View
- * Unifies the WebGL 3D Canvas, SolarEye-inspired Glass HUD, and Drawers (Telemetry, Bubble, and Virtual Lab Deck).
+ * BioGuardian Complete 3D Digital Twin View
+ * Unifies the WebGL 3D Canvas, SolarEye-inspired Glass HUD, and Drawers (Telemetry and Bubble Interceptor).
  */
 
 import React, { useState } from 'react';
@@ -20,7 +20,6 @@ interface DigitalTwinViewProps {
 
 function DigitalTwinViewContent({
   fullscreen = false,
-  initialEnvironmentMode = 'HARDWARE_TWIN',
 }: DigitalTwinViewProps) {
   const [telemetryDrawerOpen, setTelemetryDrawerOpen] = useState(false);
   const [bubbleDrawerOpen, setBubbleDrawerOpen] = useState(false);
@@ -66,10 +65,9 @@ export function DigitalTwinView({
 }: DigitalTwinViewProps) {
   return (
     <TelemetryProvider initialEnvironmentMode={initialEnvironmentMode}>
-      <DigitalTwinViewContent
-        fullscreen={fullscreen}
-        initialEnvironmentMode={initialEnvironmentMode}
-      />
+      <DigitalTwinViewContent fullscreen={fullscreen} />
     </TelemetryProvider>
   );
 }
+
+export default DigitalTwinView;

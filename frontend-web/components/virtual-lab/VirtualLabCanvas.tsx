@@ -89,20 +89,20 @@ export default function VirtualLabCanvas({
     if (!camera || !controls) return;
 
     if (view === 'OVERVIEW') {
-      camera.position.set(-2, 18, 88);
+      camera.position.set(-2, 18, 92);
       controls.target.set(-2, 0, 0);
     } else if (view === 'RESERVOIRS') {
-      camera.position.set(-62, 8, 28);
+      camera.position.set(-62, 10, 35);
       controls.target.set(-62, 3, 0);
     } else if (view === 'BUBBLE_TRAP') {
-      camera.position.set(-33.5, 8, 28);
+      camera.position.set(-33.5, 10, 32);
       controls.target.set(-33.5, 0, 0);
     } else if (view === 'OBSERVATION') {
-      camera.position.set(-12, 5, 22);
+      camera.position.set(-12, 6, 26);
       controls.target.set(-12, 0, 0);
     } else if (view === 'CHIP') {
-      camera.position.set(18, 8, 28);
-      controls.target.set(18, 0, 0);
+      camera.position.set(21, 8, 30);
+      controls.target.set(21, 0, 0);
     }
     controls.update();
   };
@@ -121,14 +121,14 @@ export default function VirtualLabCanvas({
       0.1,
       1000
     );
-    camera.position.set(-2, 18, 88);
+    camera.position.set(-2, 18, 92);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     container.appendChild(renderer.domElement);
@@ -138,7 +138,7 @@ export default function VirtualLabCanvas({
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 + 0.05;
     controls.minDistance = 8;
-    controls.maxDistance = 160;
+    controls.maxDistance = 140;
     controls.target.set(-2, 0, 0);
     controlsRef.current = controls;
 
@@ -467,15 +467,13 @@ export default function VirtualLabCanvas({
 
     // 10. ANIMATION LOOP
     let animId: number;
-    let lastTime = performance.now();
+    let clock = new THREE.Clock();
     let localBubbleX = obsX - 8.0;
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
-      const now = performance.now();
-      const delta = Math.min((now - lastTime) / 1000, 0.1);
-      lastTime = now;
-      const time = now / 1000;
+      const delta = Math.min(clock.getDelta(), 0.1);
+      const time = clock.getElapsedTime();
 
       // Dynamic organ theme update
       const currentTheme = ORGAN_THEMES[organIdRef.current] || ORGAN_THEMES.lung;
