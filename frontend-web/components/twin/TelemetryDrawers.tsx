@@ -4,14 +4,10 @@
  * BioGuardian Glass Telemetry Drawers
  *
  * Floating dark-glass drawers with backdrop-blur, scientific typography,
- * keyboard accessibility (Escape), and click-outside dismissal:
- * 1. Live Sensor Telemetry Drawer (Hardware bus)
- * 2. Bubble Analysis Drawer (Anomaly telemetry & physical trap)
- * 3. Component Inspection Modal (Prep Chip, OoC, Sensor Manifold)
- * 4. Virtual Lab Deck Drawer (In-Silico Organ Selector, Parameters, Waveforms, ML Gateway)
+ * keyboard accessibility (Escape), and click-outside dismissal.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -20,34 +16,22 @@ import {
   Droplet,
   Eye,
   Flame,
-  FlaskConical,
   Gauge,
   Info,
-  Layers,
   Microscope,
   ShieldCheck,
   Thermometer,
   Waves,
   X,
   Zap,
-  Sliders,
-  Cpu,
 } from 'lucide-react';
 import { useTelemetry } from '@/lib/telemetry/TelemetryContext';
-import OrganSelector from '@/components/virtual-lab/OrganSelector';
-import ParameterPanel from '@/components/virtual-lab/ParameterPanel';
-import SimulationCharts from '@/components/virtual-lab/SimulationCharts';
-import ResultsPanel from '@/components/virtual-lab/ResultsPanel';
-import type { OrganProfile, ParameterSchema, SimDataPoint, MLStatus, MLPredictResponse } from '@/lib/virtual-lab/types';
-import { fetchOrgans, fetchOrganParameters, queryMLPredict, fetchMLStatus } from '@/lib/virtual-lab/api';
 
 interface TelemetryDrawersProps {
   telemetryDrawerOpen: boolean;
   setTelemetryDrawerOpen: (open: boolean) => void;
   bubbleDrawerOpen: boolean;
   setBubbleDrawerOpen: (open: boolean) => void;
-  virtualLabDrawerOpen?: boolean;
-  setVirtualLabDrawerOpen?: (open: boolean) => void;
 }
 
 export function TelemetryDrawers({
@@ -55,8 +39,6 @@ export function TelemetryDrawers({
   setTelemetryDrawerOpen,
   bubbleDrawerOpen,
   setBubbleDrawerOpen,
-  virtualLabDrawerOpen = false,
-  setVirtualLabDrawerOpen,
 }: TelemetryDrawersProps) {
   const {
     telemetry,
@@ -66,84 +48,7 @@ export function TelemetryDrawers({
     clearBubbleAlert,
     setSimulationFlowRate,
     providerMode,
-    environmentMode,
-    virtualLabOrgan,
-    setVirtualLabOrgan,
-    virtualLabParams,
-    setVirtualLabParam,
-    isSimulating,
-    startSimulation,
-    pauseSimulation,
-    resetSimulation,
-    virtualLabElapsed,
-    simulatedBubbleActive,
-    injectSimulatedBubble,
   } = useTelemetry();
-
-  // Virtual Lab Drawer Sub-Tab
-  const [vlTab, setVlTab] = useState<'CONFIG' | 'CHARTS' | 'RESULTS'>('CONFIG');
-
-  // Dynamic parameters & organ profiles for the drawer
-  const [organs, setOrgans] = useState<OrganProfile[]>([]);
-  const [params, setParams] = useState<ParameterSchema[]>([]);
-  const [mlStatus, setMLStatus] = useState<MLStatus | null>(null);
-  const [mlResult, setMLResult] = useState<MLPredictResponse | null>(null);
-  const [mlQuerying, setMLQuerying] = useState<boolean>(false);
-  const [chartData, setChartData] = useState<SimDataPoint[]>([]);
-
-  useEffect(() => {
-    fetchOrgans().then(setOrgans).catch(() => {});
-    fetchMLStatus().then(setMLStatus).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetchOrganParameters(virtualLabOrgan)
-      .then((res) => {
-        if (res?.parameters) setParams(res.parameters);
-      })
-      .catch(() => {});
-  }, [virtualLabOrgan]);
-
-  // Keep simulated chart data ticking when isSimulating is active
-  useEffect(() => {
-    if (!isSimulating) return;
-    const interval = setInterval(() => {
-      const fr = virtualLabParams.flow_rate || 450;
-      setChartData((prev) => {
-        const next = [
-          ...prev,
-          {
-            t: prev.length + 1,
-            flow_rate: fr + (Math.random() - 0.5) * 6,
-            pressure: fr * 2.27 + (Math.random() - 0.5) * 2,
-            ph: (virtualLabParams.ph || 7.4) + (Math.random() - 0.5) * 0.03,
-            oxygen: (virtualLabParams.oxygen || 6.5) + (Math.random() - 0.5) * 0.08,
-            bubble_position: simulatedBubbleActive ? 0.35 : 0,
-          },
-        ];
-        return next.length > 60 ? next.slice(-60) : next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isSimulating, virtualLabParams, simulatedBubbleActive]);
-
-  const handleQueryML = async () => {
-    setMLQuerying(true);
-    setVlTab('RESULTS');
-    try {
-      const res = await queryMLPredict(virtualLabOrgan, virtualLabParams);
-      setMLResult(res);
-      const st = await fetchMLStatus();
-      setMLStatus(st);
-    } catch {
-      setMLResult({
-        available: false,
-        message: 'Could not connect to external ML prediction service.',
-      });
-    } finally {
-      setMLQuerying(false);
-    }
-  };
 
   // Handle ESC key to dismiss any open drawer
   useEffect(() => {
@@ -152,12 +57,11 @@ export function TelemetryDrawers({
         setTelemetryDrawerOpen(false);
         setBubbleDrawerOpen(false);
         setInspectionTarget(null);
-        setVirtualLabDrawerOpen?.(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setTelemetryDrawerOpen, setBubbleDrawerOpen, setInspectionTarget, setVirtualLabDrawerOpen]);
+  }, [setTelemetryDrawerOpen, setBubbleDrawerOpen, setInspectionTarget]);
 
   const probPercent = Math.round(telemetry.bubble_probability * 100);
   const isHighRisk = telemetry.bubble_detected || probPercent > 75;
@@ -166,7 +70,7 @@ export function TelemetryDrawers({
   return (
     <>
       {/* ========================================================= */}
-      {/* 1. LIVE TELEMETRY DRAWER                                  */}
+      {/* 1. LIVE TELEMETRY DRAWER (All 6 Sensors)                  */}
       {/* ========================================================= */}
       {telemetryDrawerOpen && (
         <div
@@ -175,7 +79,7 @@ export function TelemetryDrawers({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute right-0 top-0 bottom-0 w-full sm:w-[420px] bg-[#090e1a]/95 backdrop-blur-xl border-l border-teal/20 p-6 flex flex-col shadow-2xl text-slate-100 z-50 overflow-y-auto animate-in slide-in-from-right duration-300"
+            className="absolute right-0 top-0 bottom-0 w-full sm:w-[420px] bg-[#090e1a]/90 backdrop-blur-xl border-l border-teal/20 p-6 flex flex-col shadow-2xl text-slate-100 z-50 overflow-y-auto animate-in slide-in-from-right duration-300"
           >
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
@@ -185,53 +89,157 @@ export function TelemetryDrawers({
                 </span>
                 <div>
                   <h3 className="font-semibold text-sm tracking-wide text-white">LIVE SENSOR TELEMETRY</h3>
-                  <div className="text-[11px] text-slate-400">Microfluidic Sensor Manifold Bus</div>
+                  <div className="text-[11px] text-slate-400">Microfluidic Channel Bus · 1000ms Poll</div>
                 </div>
               </div>
               <button
                 onClick={() => setTelemetryDrawerOpen(false)}
                 className="size-8 rounded-lg border border-white/10 hover:border-teal/40 hover:bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition"
+                aria-label="Close telemetry drawer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            {/* Telemetry Metric Cards */}
-            <div className="mt-5 space-y-3">
-              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                <span className="text-[11px] text-slate-400">Microfluidic Flow Rate</span>
-                <div className="text-xl font-bold font-mono text-teal mt-0.5">
-                  {telemetry.flow_rate.toFixed(1)} <span className="text-xs font-normal text-slate-400">µL/min</span>
+            {/* Sensor Metric Grid */}
+            <div className="mt-5 space-y-3.5 flex-1">
+              {/* Volumetric Flow Rate */}
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-teal/30 transition">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Waves className="size-3.5 text-teal" /> Flow Rate
+                  </span>
+                  <span className="font-mono text-[10px] text-teal px-1.5 py-0.5 rounded bg-teal/10 border border-teal/20">
+                    TARGET: 450
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-bold font-mono tracking-tight text-white">
+                    {telemetry.flow_rate.toFixed(1)} <span className="text-xs font-normal text-slate-400">µL/min</span>
+                  </div>
+                  <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="size-3" /> Nominal
+                  </span>
+                </div>
+                <div className="mt-2 text-[11px] text-slate-400 flex justify-between border-t border-white/5 pt-2">
+                  <span>Velocity: {(telemetry.flow_rate * 0.0022).toFixed(3)} mm/s</span>
+                  <span>Shear: 0.12 Pa</span>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                <span className="text-[11px] text-slate-400">Channel Hydrostatic Pressure</span>
-                <div className="text-xl font-bold font-mono text-purple-300 mt-0.5">
-                  {telemetry.pressure.toFixed(1)} <span className="text-xs font-normal text-slate-400">mbar</span>
+              {/* Hydrostatic Pressure */}
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-teal/30 transition">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Gauge className="size-3.5 text-sky-400" /> Hydrostatic Pressure
+                  </span>
+                  <span className="font-mono text-[10px] text-sky-400 px-1.5 py-0.5 rounded bg-sky-400/10 border border-sky-400/20">
+                    RANGE: 980-1040
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-bold font-mono tracking-tight text-white">
+                    {telemetry.pressure.toFixed(1)} <span className="text-xs font-normal text-slate-400">mbar</span>
+                  </div>
+                  <span className={`text-xs font-medium flex items-center gap-1 ${isHighRisk ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {isHighRisk ? <AlertTriangle className="size-3" /> : <CheckCircle2 className="size-3" />}
+                    {isHighRisk ? 'Elevated' : 'Stable'}
+                  </span>
+                </div>
+                <div className="mt-2 text-[11px] text-slate-400 flex justify-between border-t border-white/5 pt-2">
+                  <span>Delta P: +0.4%</span>
+                  <span>Resistance: 2.24 Pa·s/m³</span>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                <span className="text-[11px] text-slate-400">Physiological pH</span>
-                <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
-                  {telemetry.ph.toFixed(2)}
+              {/* pH Level */}
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-teal/30 transition">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Droplet className="size-3.5 text-teal" /> pH Buffer
+                  </span>
+                  <span className="font-mono text-[10px] text-teal px-1.5 py-0.5 rounded bg-teal/10 border border-teal/20">
+                    OPT: 7.35-7.45
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-bold font-mono tracking-tight text-white">
+                    {telemetry.ph.toFixed(2)} <span className="text-xs font-normal text-slate-400">pH</span>
+                  </div>
+                  <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="size-3" /> Physiological
+                  </span>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                <span className="text-[11px] text-slate-400">Dissolved Oxygen (pO₂)</span>
-                <div className="text-xl font-bold font-mono text-sky-400 mt-0.5">
-                  {telemetry.oxygen.toFixed(1)} <span className="text-xs font-normal text-slate-400">mg/L</span>
+              {/* Dissolved Oxygen */}
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-teal/30 transition">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Activity className="size-3.5 text-cyan-400" /> Dissolved Oxygen (dO₂)
+                  </span>
+                  <span className="font-mono text-[10px] text-cyan-400 px-1.5 py-0.5 rounded bg-cyan-400/10 border border-cyan-400/20">
+                    SAT: 6.0-8.0
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-bold font-mono tracking-tight text-white">
+                    {telemetry.oxygen.toFixed(1)} <span className="text-xs font-normal text-slate-400">mg/L</span>
+                  </div>
+                  <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="size-3" /> Normoxic
+                  </span>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                <span className="text-[11px] text-slate-400">Medium Incubation Temperature</span>
-                <div className="text-xl font-bold font-mono text-amber-300 mt-0.5">
-                  {telemetry.temperature.toFixed(1)} <span className="text-xs font-normal text-slate-400">°C</span>
+              {/* Glucose Concentration */}
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-teal/30 transition">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Flame className="size-3.5 text-amber-400" /> Glucose Concentration
+                  </span>
+                  <span className="font-mono text-[10px] text-amber-400 px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/20">
+                    OPT: 80-120
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-bold font-mono tracking-tight text-white">
+                    {telemetry.glucose.toFixed(1)} <span className="text-xs font-normal text-slate-400">mg/dL</span>
+                  </div>
+                  <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="size-3" /> Balanced
+                  </span>
                 </div>
               </div>
+
+              {/* Temperature */}
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 hover:border-teal/30 transition">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Thermometer className="size-3.5 text-rose-400" /> Incubation Temperature
+                  </span>
+                  <span className="font-mono text-[10px] text-rose-400 px-1.5 py-0.5 rounded bg-rose-400/10 border border-rose-400/20">
+                    TARGET: 37.0°C
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <div className="text-2xl font-bold font-mono tracking-tight text-white">
+                    {telemetry.temperature.toFixed(1)} <span className="text-xs font-normal text-slate-400">°C</span>
+                  </div>
+                  <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="size-3" /> Core Setpoint
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer summary */}
+            <div className="pt-4 mt-auto border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-teal animate-pulse" />
+                Bus: BG-I2C-SPI-01
+              </span>
+              <span className="font-mono text-[11px]">{new Date(telemetry.timestamp).toLocaleTimeString()}</span>
             </div>
           </div>
         </div>
@@ -247,171 +255,283 @@ export function TelemetryDrawers({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute right-0 top-0 bottom-0 w-full sm:w-[440px] bg-[#090e1a]/95 backdrop-blur-xl border-l border-rose-500/30 p-6 flex flex-col shadow-2xl text-slate-100 z-50 overflow-y-auto animate-in slide-in-from-right duration-300"
+            className="absolute right-0 top-0 bottom-0 w-full sm:w-[440px] bg-[#090e1a]/90 backdrop-blur-xl border-l border-teal/20 p-6 flex flex-col shadow-2xl text-slate-100 z-50 overflow-y-auto animate-in slide-in-from-right duration-300"
           >
+            {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
               <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                <span className={`p-2 rounded-xl border ${isHighRisk ? 'bg-rose-500/20 text-rose-400 border-rose-500/40' : 'bg-teal/15 text-teal border-teal/30'}`}>
                   <Zap className="size-5" />
                 </span>
                 <div>
-                  <h3 className="font-semibold text-sm tracking-wide text-white">BUBBLE TRAP TELEMETRY</h3>
-                  <div className="text-[11px] text-rose-300">Passive Vent Well & Optical Detection</div>
+                  <h3 className="font-semibold text-sm tracking-wide text-white">AI BUBBLE DETECTION ANALYSIS</h3>
+                  <div className="text-[11px] text-slate-400">Inlet Inspection Zone · CMOS + IR Refractometry</div>
                 </div>
               </div>
               <button
                 onClick={() => setBubbleDrawerOpen(false)}
-                className="size-8 rounded-lg border border-white/10 hover:border-rose-400/40 hover:bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition"
+                className="size-8 rounded-lg border border-white/10 hover:border-teal/40 hover:bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition"
+                aria-label="Close bubble drawer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="mt-5 space-y-4">
-              <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-500/30">
-                <span className="text-[11px] text-rose-300 uppercase font-mono">Detection Confidence</span>
-                <div className="text-2xl font-bold font-mono text-white mt-1">{probPercent}%</div>
-                <div className="w-full h-2 bg-slate-900 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className="h-full bg-rose-500 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(probPercent, 100)}%` }}
-                  />
+            {/* Bubble Status Banner */}
+            <div className={`mt-5 p-4 rounded-2xl border ${
+              isHighRisk
+                ? 'bg-rose-500/10 border-rose-500/40 text-rose-200 shadow-lg shadow-rose-950/40'
+                : isSuspicious
+                ? 'bg-amber-500/10 border-amber-500/40 text-amber-200'
+                : 'bg-teal/10 border-teal/30 text-teal-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wider font-semibold">Classification State</span>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold font-mono tracking-wider ${
+                  isHighRisk
+                    ? 'bg-rose-500 text-white'
+                    : isSuspicious
+                    ? 'bg-amber-500 text-black'
+                    : 'bg-teal text-white'
+                }`}>
+                  {telemetry.bubble_detected ? 'BUBBLE DETECTED' : 'BUBBLE NOT DETECTED'}
+                </span>
+              </div>
+              <div className="mt-3 flex items-baseline justify-between">
+                <div>
+                  <div className="text-xs text-slate-400">Estimated Bubble Probability</div>
+                  <div className="text-3xl font-bold font-mono text-white mt-0.5">
+                    {probPercent}%
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-slate-400">Severity Rating</div>
+                  <div className={`text-sm font-semibold mt-1 ${
+                    isHighRisk ? 'text-rose-400' : isSuspicious ? 'text-amber-400' : 'text-emerald-400'
+                  }`}>
+                    {isHighRisk ? 'HIGH CRITICAL' : isSuspicious ? 'SUSPICIOUS' : 'NOMINAL CLEAR'}
+                  </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-xs space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Passive Trap Status:</span>
-                  <span className="font-semibold text-teal-300">Active Hydrophobic Membrane</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Bubble Location:</span>
-                  <span className="font-mono text-white">Prep & Bubble Trap Well (x=20)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Downstream OoC Risk:</span>
-                  <span className={isHighRisk ? 'text-rose-400 font-bold' : 'text-emerald-400'}>
-                    {isHighRisk ? 'Interception Valve Engaged' : 'Safe / Protected'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 space-y-2">
-                <button
-                  onClick={injectSimulatedBubble}
-                  className="w-full py-2.5 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2"
-                >
-                  <AlertTriangle className="size-4" />
-                  <span>Simulate Bubble Influx</span>
-                </button>
+              {/* Progress bar */}
+              <div className="mt-3.5 h-2 w-full rounded-full bg-black/40 overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    isHighRisk ? 'bg-rose-500' : isSuspicious ? 'bg-amber-400' : 'bg-teal'
+                  }`}
+                  style={{ width: `${Math.max(2, probPercent)}%` }}
+                />
               </div>
             </div>
+
+            {/* Analysis Metrics */}
+            <div className="mt-5 space-y-3">
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Observation Zone Coordinate</span>
+                <span className="font-mono text-white font-medium">x = -20.0 mm (Upstream)</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Microchannel Hydrodynamic Flow</span>
+                <span className="font-mono text-white font-medium">{telemetry.flow_rate.toFixed(1)} µL/min</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Optical Transmittance Deviation</span>
+                <span className={`font-mono font-medium ${isHighRisk ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {isHighRisk ? '-42.8% (IR Dip)' : '+0.2% (Clear)'}
+                </span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Organ-on-Chip Barrier Protection</span>
+                <span className="text-teal font-medium flex items-center gap-1">
+                  <ShieldCheck className="size-3.5" /> Intercept Ready
+                </span>
+              </div>
+            </div>
+
+            {/* Interactive Simulation Injections (clearly marked DEMO) */}
+            {providerMode === 'mock' && (
+              <div className="mt-6 p-4 rounded-2xl bg-white/[0.02] border border-white/10">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-semibold text-slate-300">DEMO INJECTION CONTROLS</span>
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-teal/10 text-teal border border-teal/20">
+                    SIMULATION ONLY
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mb-3">
+                  Inject synthetic microfluidic anomalies into the 3D Digital Twin to evaluate protection response.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={triggerBubbleAlert}
+                    className="py-2.5 px-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-medium hover:bg-rose-500/30 transition flex items-center justify-center gap-1.5"
+                  >
+                    <span>🔴</span> Inject Bubble
+                  </button>
+                  <button
+                    onClick={clearBubbleAlert}
+                    className="py-2.5 px-3 rounded-xl bg-teal/20 border border-teal/40 text-teal-200 text-xs font-medium hover:bg-teal/30 transition flex items-center justify-center gap-1.5"
+                  >
+                    <span>🟢</span> Clear Bubble
+                  </button>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Simulate Flow Speed:</span>
+                  <div className="flex gap-1.5">
+                    {[0, 200, 450].map((rate) => (
+                      <button
+                        key={rate}
+                        onClick={() => setSimulationFlowRate(rate)}
+                        className={`px-2.5 py-1 text-[11px] font-mono rounded-lg border ${
+                          Math.abs(telemetry.flow_rate - rate) < 15
+                            ? 'bg-teal text-black font-bold border-teal'
+                            : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/25'
+                        }`}
+                      >
+                        {rate === 0 ? 'Halt' : `${rate}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* ========================================================= */}
-      {/* 3. VIRTUAL LAB SLIDE-OUT DECK DRAWER                      */}
+      {/* 3. CONTEXTUAL COMPONENT INSPECTION DRAWER                  */}
       {/* ========================================================= */}
-      {virtualLabDrawerOpen && setVirtualLabDrawerOpen && (
+      {inspectionTarget && (
         <div
           className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs lg:bg-transparent"
-          onClick={() => setVirtualLabDrawerOpen(false)}
+          onClick={() => setInspectionTarget(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute left-0 top-0 bottom-0 w-full sm:w-[500px] bg-[#090e1a]/95 backdrop-blur-xl border-r border-purple-500/30 p-6 flex flex-col shadow-2xl text-slate-100 z-50 overflow-y-auto animate-in slide-in-from-left duration-300"
+            className="absolute left-4 sm:left-8 bottom-6 sm:bottom-10 w-[calc(100%-2rem)] sm:w-[460px] bg-[#090e1a]/95 backdrop-blur-2xl border border-teal/30 rounded-3xl p-6 shadow-2xl text-slate-100 z-50 animate-in slide-in-from-bottom duration-300"
           >
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
               <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                  <FlaskConical className="size-5" />
+                <span className="p-2 rounded-xl bg-teal/15 text-teal border border-teal/30">
+                  {inspectionTarget === 'ORGAN_ON_CHIP' ? <Microscope className="size-5" /> : <Eye className="size-5" />}
                 </span>
                 <div>
-                  <h3 className="font-semibold text-sm tracking-wide text-white">VIRTUAL LAB SIMULATION DECK</h3>
-                  <div className="text-[11px] text-purple-300">In-Silico Organ-on-Chip Experimentation</div>
+                  <h3 className="font-semibold text-sm tracking-wide text-white">
+                    {inspectionTarget === 'ORGAN_ON_CHIP'
+                      ? 'ORGAN-ON-CHIP (PDMS BIO-CHAMBER)'
+                      : 'INLET BUBBLE OBSERVATION ZONE'}
+                  </h3>
+                  <div className="text-[11px] text-teal">
+                    {inspectionTarget === 'ORGAN_ON_CHIP'
+                      ? 'Primary Monitored Cell Culture Substrate'
+                      : 'Upstream Optical Anomaly Intercept Gate'}
+                  </div>
                 </div>
               </div>
               <button
-                onClick={() => setVirtualLabDrawerOpen(false)}
-                className="size-8 rounded-lg border border-white/10 hover:border-purple-400/40 hover:bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition"
+                onClick={() => setInspectionTarget(null)}
+                className="size-8 rounded-lg border border-white/10 hover:border-teal/40 hover:bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition"
+                aria-label="Close component inspection drawer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            {/* Tab Switcher */}
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/[0.04] border border-white/10 rounded-xl my-4">
+            {/* Component Quick Switcher */}
+            <div className="grid grid-cols-2 gap-2 mt-3.5 p-1 bg-white/[0.04] border border-white/10 rounded-xl">
               <button
-                onClick={() => setVlTab('CONFIG')}
-                className={`py-1.5 text-xs font-semibold rounded-lg transition ${
-                  vlTab === 'CONFIG' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                onClick={() => setInspectionTarget('ORGAN_ON_CHIP')}
+                className={`py-1.5 px-2 rounded-lg text-xs font-mono transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  inspectionTarget === 'ORGAN_ON_CHIP'
+                    ? 'bg-teal/20 text-teal font-semibold border border-teal/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Organ & Params
+                <Microscope className="size-3.5" />
+                Organ-on-Chip
               </button>
               <button
-                onClick={() => setVlTab('CHARTS')}
-                className={`py-1.5 text-xs font-semibold rounded-lg transition ${
-                  vlTab === 'CHARTS' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                onClick={() => setInspectionTarget('INLET_OBSERVATION')}
+                className={`py-1.5 px-2 rounded-lg text-xs font-mono transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  inspectionTarget === 'INLET_OBSERVATION'
+                    ? 'bg-teal/20 text-teal font-semibold border border-teal/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Waveforms
-              </button>
-              <button
-                onClick={() => setVlTab('RESULTS')}
-                className={`py-1.5 text-xs font-semibold rounded-lg transition ${
-                  vlTab === 'RESULTS' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                ML Gateway
+                <Eye className="size-3.5" />
+                Inlet Zone
               </button>
             </div>
 
-            {/* Tab Contents */}
-            <div className="flex-1 overflow-y-auto space-y-4">
-              {vlTab === 'CONFIG' && (
-                <>
-                  <OrganSelector
-                    organs={organs}
-                    selected={virtualLabOrgan}
-                    onSelect={setVirtualLabOrgan}
-                  />
-                  <div className="pt-2">
-                    <ParameterPanel
-                      parameters={params}
-                      values={virtualLabParams}
-                      onChange={setVirtualLabParam}
-                      onRun={isSimulating ? pauseSimulation : startSimulation}
-                      onQueryML={handleQueryML}
-                      isRunning={isSimulating}
-                      mlQuerying={mlQuerying}
-                    />
+            {inspectionTarget === 'ORGAN_ON_CHIP' ? (
+              <div className="mt-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                    <span className="text-[11px] text-slate-400">Microchannel Health</span>
+                    <div className="text-lg font-bold font-mono text-emerald-400 mt-0.5">100% NOMINAL</div>
                   </div>
-                </>
-              )}
-
-              {vlTab === 'CHARTS' && (
-                <div className="pt-2">
-                  <SimulationCharts data={chartData} />
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                    <span className="text-[11px] text-slate-400">Bubble Risk Level</span>
+                    <div className={`text-lg font-bold font-mono mt-0.5 ${isHighRisk ? 'text-rose-400' : 'text-teal'}`}>
+                      {isHighRisk ? 'CRITICAL SPIKE' : 'CLEAR'}
+                    </div>
+                  </div>
                 </div>
-              )}
 
-              {vlTab === 'RESULTS' && (
-                <div className="pt-2">
-                  <ResultsPanel
-                    organ={virtualLabOrgan}
-                    simState={null}
-                    elapsed={virtualLabElapsed}
-                    bubbleCount={simulatedBubbleActive ? 1 : 0}
-                    mlStatus={mlStatus}
-                    mlResult={mlResult}
-                    mlQuerying={mlQuerying}
-                  />
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Material Composition:</span>
+                    <span className="font-medium text-white">Sylgard 184 PDMS / Glass Base</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Cell Culture Model:</span>
+                    <span className="font-medium text-white">Endothelial-Epithelial Barrier</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Central Chamber Vol:</span>
+                    <span className="font-mono text-white">2.8 µL</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Core Incubation:</span>
+                    <span className="font-mono text-white">{telemetry.temperature.toFixed(1)} °C</span>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                    <span className="text-[11px] text-slate-400">Detection Node</span>
+                    <div className="text-lg font-bold font-mono text-teal mt-0.5">OPT-CMOS-A1</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                    <span className="text-[11px] text-slate-400">Confidence Score</span>
+                    <div className="text-lg font-bold font-mono text-white mt-0.5">{probPercent}%</div>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Axial Position:</span>
+                    <span className="font-mono text-white">-20.0 mm Upstream</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Optical Modality:</span>
+                    <span className="font-medium text-white">High-Speed Edge Vision + IR</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Observed Flow:</span>
+                    <span className="font-mono text-white">{telemetry.flow_rate.toFixed(1)} µL/min</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Hydrostatic Head:</span>
+                    <span className="font-mono text-white">{telemetry.pressure.toFixed(1)} mbar</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

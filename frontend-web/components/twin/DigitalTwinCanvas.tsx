@@ -3,14 +3,15 @@
 /**
  * BioGuardian 3D Digital Twin - Photorealistic Microfluidic Engine
  *
- * Full CAD/Physical Layout matching BioGuardian Engineering Schematics:
- * 1. RESERVOIR BOTTLES (Right): Cell Media & Drug/Reagent with blue caps & 90° pickup tubes
- * 2. PREP & BUBBLE TRAP CHIP (Middle-Right): 3-layer laminated cartridge with dual vertical inlets,
- *    Y-junction mixer, serpentine chaotic channel, and central passive bubble trap/vent well
- * 3. CELL CULTURE CHIP (Center): High-fidelity 76x26mm Organ-on-Chip with microporous membrane,
- *    upper apical chamber, lower vascular channel, and organ-specific tissue morphology
- * 4. SENSOR MANIFOLD (Left): CNC bronze block with vertical electrochemical sensor probe (pH, DO & Flow)
- * 5. EFFLUENT DRAIN: Outflow tube directed TO WASTE
+ * Visually authentic scientific laboratory visualization:
+ * - 1. RESERVOIR BOTTLES (Left: x ~ -78): Cell Media & Drug/Reagent with GL45 blue caps & 90° stainless pickup tubes
+ * - 2. PREP & BUBBLE TRAP CHIP (x ~ -48): 3-layer laminated cartridge with dual vertical inlets,
+ *      Y-junction mixer, serpentine chaotic mixing channel, and central passive bubble trap/vent well
+ * - 3. OPTICAL OBSERVATION ZONE (x ~ -20): Machine-vision camera (brushed aluminum, knurled lens, C-mount, laser reticle)
+ * - 4. CELL CULTURE CHIP (Center: x ~ 21): Full original high-fidelity Organ-on-Chip (76x26mm borosilicate slide base,
+ *      PDMS elastomer block, micro-porous membrane, upper apical channel, lower vascular channel, vacuum side chambers)
+ * - 5. SENSOR MANIFOLD (Right: x ~ 56): CNC bronze block with vertical electrochemical sensor probe (pH, DO & Flow)
+ * - 6. EFFLUENT DRAIN (x ~ 68): Drainage tube to glass beaker labeled TO WASTE
  *
  * Supports both:
  * - Live Hardware Digital Twin (ESP32 Telemetry & Camera Inspection)
@@ -48,7 +49,7 @@ export function DigitalTwinCanvas() {
     simulatedBubblePos,
   } = useTelemetry();
 
-  // Active state refs for render loop
+  // State refs for render loop
   const telemetryRef = useRef(telemetry);
   useEffect(() => { telemetryRef.current = telemetry; }, [telemetry]);
 
@@ -81,19 +82,19 @@ export function DigitalTwinCanvas() {
     if (!container) return;
 
     // ==========================================
-    // 1. THREE.JS SCENE SETUP
+    // 1. SCENE & ENVIRONMENT
     // ==========================================
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x070c16);
-    scene.fog = new THREE.FogExp2(0x070c16, 0.005);
+    scene.background = new THREE.Color(0x0a1120);
+    scene.fog = new THREE.FogExp2(0x0a1120, 0.005);
 
     const camera = new THREE.PerspectiveCamera(
-      38,
+      40,
       container.clientWidth / container.clientHeight,
       0.1,
       1000
     );
-    camera.position.set(0, 24, 62);
+    camera.position.set(-4, 18, 54);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -103,7 +104,7 @@ export function DigitalTwinCanvas() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.3;
+    renderer.toneMappingExposure = 1.25;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     container.innerHTML = '';
@@ -114,643 +115,902 @@ export function DigitalTwinCanvas() {
     controls.dampingFactor = 0.05;
     controls.minDistance = 10;
     controls.maxDistance = 140;
-    controls.maxPolarAngle = Math.PI / 2 + 0.02;
-    controls.target.set(0, 1.5, 0);
+    controls.maxPolarAngle = Math.PI / 2 + 0.05;
+    controls.target.set(-4, 0, 0);
 
     // ==========================================
     // 2. STUDIO LABORATORY LIGHTING RIG
     // ==========================================
-    const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x111c2e, 1.6);
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 1.8);
     scene.add(hemiLight);
 
-    const mainKeyLight = new THREE.DirectionalLight(0xffffff, 2.8);
-    mainKeyLight.position.set(30, 60, 45);
+    const mainKeyLight = new THREE.DirectionalLight(0xffffff, 2.6);
+    mainKeyLight.position.set(25, 50, 35);
     mainKeyLight.castShadow = true;
     mainKeyLight.shadow.mapSize.width = 2048;
     mainKeyLight.shadow.mapSize.height = 2048;
     mainKeyLight.shadow.bias = -0.0001;
     scene.add(mainKeyLight);
 
-    const frontFillLight = new THREE.DirectionalLight(0xcfd8dc, 1.6);
-    frontFillLight.position.set(-20, 25, 45);
+    const frontFillLight = new THREE.DirectionalLight(0xe2e8f0, 1.8);
+    frontFillLight.position.set(-15, 20, 45);
     scene.add(frontFillLight);
 
-    const cyanRim = new THREE.DirectionalLight(0x00f0ff, 2.0);
-    cyanRim.position.set(-45, 10, -35);
-    scene.add(cyanRim);
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 2.2);
+    rimLight.position.set(-35, -10, -40);
+    scene.add(rimLight);
 
-    const purpleGlow = new THREE.PointLight(0xa855f7, 2.2, 45);
-    purpleGlow.position.set(38, 12, 10);
-    scene.add(purpleGlow);
+    const chipTopLight = new THREE.PointLight(0x2dd4bf, 2.2, 50);
+    chipTopLight.position.set(17.5, 10, 8);
+    scene.add(chipTopLight);
+
+    const inspectionLight = new THREE.PointLight(0x00f0ff, 3.0, 35);
+    inspectionLight.position.set(-20, 7, 3);
+    scene.add(inspectionLight);
+
+    const prepChipLight = new THREE.PointLight(0x00d4c8, 2.2, 40);
+    prepChipLight.position.set(-48, 8, 4);
+    scene.add(prepChipLight);
 
     // ==========================================
     // 3. OPTICAL BREADBOARD LABORATORY STAGE
     // ==========================================
     const stageGroup = new THREE.Group();
-    const breadboardWidth = 140;
-    const breadboardDepth = 48;
-    const breadboardGeo = new THREE.BoxGeometry(breadboardWidth, 2.4, breadboardDepth);
+    const breadboardWidth = 190;
+    const breadboardDepth = 110;
+    const breadboardThickness = 2.5;
+
+    const breadboardGeo = new THREE.BoxGeometry(breadboardWidth, breadboardThickness, breadboardDepth);
     const breadboardMat = new THREE.MeshStandardMaterial({
-      color: 0x131f33,
+      color: 0x1e293b,
       metalness: 0.88,
       roughness: 0.28,
     });
     const breadboard = new THREE.Mesh(breadboardGeo, breadboardMat);
-    breadboard.position.y = -1.2;
+    breadboard.position.y = -8 - breadboardThickness / 2;
     breadboard.receiveShadow = true;
     stageGroup.add(breadboard);
 
-    // Grid Holes Texture on Breadboard
-    const gridHelper = new THREE.GridHelper(breadboardWidth - 4, 35, 0x1e3a5f, 0x0f2238);
-    gridHelper.position.y = 0.02;
+    const rimGeo = new THREE.BoxGeometry(breadboardWidth + 1.2, 0.6, breadboardDepth + 1.2);
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.95, roughness: 0.15 });
+    const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+    rimMesh.position.y = -8 + 0.1;
+    stageGroup.add(rimMesh);
+
+    const gridHelper = new THREE.GridHelper(breadboardWidth - 8, 38, 0x38bdf8, 0x334155);
+    gridHelper.position.y = -7.95;
     stageGroup.add(gridHelper);
 
-    // Vibration Isolation Feet
-    [-(breadboardWidth / 2 - 8), breadboardWidth / 2 - 8].forEach((posX) => {
-      [-18, 18].forEach((posZ) => {
-        const footGeo = new THREE.CylinderGeometry(2.4, 2.8, 2.6, 24);
-        const footMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.95, roughness: 0.2 });
+    [-80, 80].forEach((posX) => {
+      [-44, 44].forEach((posZ) => {
+        const footGeo = new THREE.CylinderGeometry(3.0, 3.4, 3, 24);
+        const footMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.2 });
         const foot = new THREE.Mesh(footGeo, footMat);
-        foot.position.set(posX, -2.5, posZ);
+        foot.position.set(posX, -11, posZ);
         stageGroup.add(foot);
       });
     });
 
+    const floorGeo = new THREE.PlaneGeometry(800, 800);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x080f1e, roughness: 0.5, metalness: 0.7 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -12.5;
+    floor.receiveShadow = true;
+    stageGroup.add(floor);
+
+    const labGrid = new THREE.GridHelper(600, 60, 0x1e293b, 0x0f172a);
+    labGrid.position.y = -12.45;
+    stageGroup.add(labGrid);
+
     scene.add(stageGroup);
 
-    // Materials Library
+    // Reusable Materials
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.18 });
     const tubingMat = new THREE.MeshPhysicalMaterial({
       color: 0xf8fafc,
-      transmission: 0.94,
-      roughness: 0.05,
+      transmission: 0.95,
+      roughness: 0.04,
       metalness: 0.02,
-      ior: 1.45,
+      ior: 1.46,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.42,
       depthWrite: false,
     });
 
-    const blueFluidMat = new THREE.MeshPhysicalMaterial({
+    // Helper: Create 3D Tube Mesh from CatmullRom Curve
+    const createTube = (points: THREE.Vector3[], radius = 0.5) => {
+      const curve = new THREE.CatmullRomCurve3(points);
+      const geo = new THREE.TubeGeometry(curve, 36, radius, 16, false);
+      return new THREE.Mesh(geo, tubingMat);
+    };
+
+    // ==========================================
+    // 4. RESERVOIR BOTTLES (Far Left: x ~ -76)
+    // Cell Media (Bottle 1) & Drug/Reagent (Bottle 2)
+    // ==========================================
+    const bottlesGroup = new THREE.Group();
+    bottlesGroup.name = 'RESERVOIRS';
+
+    const bottleBodyGeo = new THREE.CylinderGeometry(3.6, 3.8, 12, 32);
+    const bottleGlassMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf8fafc,
+      transparent: true,
+      opacity: 0.6,
+      transmission: 0.88,
+      roughness: 0.08,
+      ior: 1.5,
+    });
+    const blueCapMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.35, metalness: 0.2 });
+    const bottleCapGeo = new THREE.CylinderGeometry(4.0, 4.0, 2.0, 32);
+
+    // Media Bottle (Pink DMEM fluid)
+    const mediaBottle = new THREE.Mesh(bottleBodyGeo, bottleGlassMat);
+    mediaBottle.position.set(-76, -2.0, -8);
+    bottlesGroup.add(mediaBottle);
+
+    const mediaFluidGeo = new THREE.CylinderGeometry(3.4, 3.6, 9.5, 24);
+    const mediaFluidMat = new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.65, transmission: 0.75 });
+    const mediaFluid = new THREE.Mesh(mediaFluidGeo, mediaFluidMat);
+    mediaFluid.position.set(-76, -3.2, -8);
+    bottlesGroup.add(mediaFluid);
+
+    const mediaCap = new THREE.Mesh(bottleCapGeo, blueCapMat);
+    mediaCap.position.set(-76, 5.0, -8);
+    bottlesGroup.add(mediaCap);
+
+    // Drug Bottle (Purple compound)
+    const drugBottle = new THREE.Mesh(bottleBodyGeo, bottleGlassMat);
+    drugBottle.position.set(-76, -2.0, 8);
+    bottlesGroup.add(drugBottle);
+
+    const drugFluidMat = new THREE.MeshPhysicalMaterial({ color: 0xa855f7, transparent: true, opacity: 0.65, transmission: 0.75 });
+    const drugFluid = new THREE.Mesh(mediaFluidGeo, drugFluidMat);
+    drugFluid.position.set(-76, -3.2, 8);
+    bottlesGroup.add(drugFluid);
+
+    const drugCap = new THREE.Mesh(bottleCapGeo, blueCapMat);
+    drugCap.position.set(-76, 5.0, 8);
+    bottlesGroup.add(drugCap);
+
+    // 90° Overhead Inflow Tubing from Bottles into Prep Chip Inlets
+    const mediaTube = createTube([
+      new THREE.Vector3(-76, 5.5, -8),
+      new THREE.Vector3(-76, 8.5, -8),
+      new THREE.Vector3(-66, 8.5, -4.5),
+      new THREE.Vector3(-60, 4.0, -4.5),
+      new THREE.Vector3(-60, -0.5, -4.5),
+    ], 0.42);
+    bottlesGroup.add(mediaTube);
+
+    const drugTube = createTube([
+      new THREE.Vector3(-76, 5.5, 8),
+      new THREE.Vector3(-76, 7.5, 8),
+      new THREE.Vector3(-66, 7.5, 4.5),
+      new THREE.Vector3(-60, 4.0, 4.5),
+      new THREE.Vector3(-60, -0.5, 4.5),
+    ], 0.42);
+    bottlesGroup.add(drugTube);
+
+    scene.add(bottlesGroup);
+
+    // ==========================================
+    // 5. PREP & BUBBLE TRAP CHIP (x ~ -48)
+    // 3-Layer Laminated Cartridge: Y-Mixer, Serpentine Channel, Passive Vent Well
+    // ==========================================
+    const prepGroup = new THREE.Group();
+    prepGroup.name = 'BUBBLE_TRAP';
+    const prepX = -46.0;
+    const prepW = 30.0;
+    const prepH = 3.2;
+    const prepD = 15.0;
+
+    // Cartridge Body: Light greenish-teal tinted PDMS/PMMA (Image 1 & 2)
+    const prepBodyGeo = new THREE.BoxGeometry(prepW, prepH, prepD);
+    const prepBodyMat = new THREE.MeshPhysicalMaterial({
+      color: 0xccfbf1,
+      transparent: true,
+      opacity: 0.65,
+      transmission: 0.9,
+      roughness: 0.08,
+      ior: 1.48,
+    });
+    const prepBody = new THREE.Mesh(prepBodyGeo, prepBodyMat);
+    prepBody.position.set(prepX, -2.5, 0);
+    prepBody.castShadow = true;
+    prepGroup.add(prepBody);
+
+    // Slide Edge Framing
+    const prepEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(prepBodyGeo),
+      new THREE.LineBasicMaterial({ color: 0x2dd4bf, transparent: true, opacity: 0.5 })
+    );
+    prepBody.add(prepEdges);
+
+    // Dual Inlet Gaskets at x = -59
+    [-4.5, 4.5].forEach((zOff) => {
+      const gasket = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.2, 20), steelMat);
+      gasket.position.set(-59.0, -0.5, zOff);
+      prepGroup.add(gasket);
+    });
+
+    // Internal Channel: Y-Junction -> Serpentine Mixer -> Vent Chamber -> Outlet
+    const channelMat = new THREE.MeshPhysicalMaterial({
       color: 0x00d4c8,
-      transmission: 0.82,
+      emissive: 0x0f766e,
+      emissiveIntensity: 0.7,
+      transparent: true,
+      opacity: 0.9,
+    });
+
+    // Y-Junction Feeder Branches
+    const yBranch1 = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.45, 0.8), channelMat);
+    yBranch1.position.set(-55.5, -2.5, -2.5);
+    yBranch1.rotation.y = 0.45;
+    prepGroup.add(yBranch1);
+
+    const yBranch2 = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.45, 0.8), channelMat);
+    yBranch2.position.set(-55.5, -2.5, 2.5);
+    yBranch2.rotation.y = -0.45;
+    prepGroup.add(yBranch2);
+
+    // Serpentine Chaotic Mixer (Square-wave zigzags between x=-52 and x=-44)
+    const serpentineGroup = new THREE.Group();
+    const zigzags = [[-2.5, 2.5], [2.5, -2.5], [-2.5, 2.5], [2.5, -2.5]];
+    let sx = -52.0;
+    zigzags.forEach(([z1, z2]) => {
+      const zBar = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, Math.abs(z2 - z1)), channelMat);
+      zBar.position.set(sx, -2.5, (z1 + z2) / 2);
+      serpentineGroup.add(zBar);
+
+      const xBar = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.6), channelMat);
+      xBar.position.set(sx + 1.0, -2.5, z2);
+      serpentineGroup.add(xBar);
+      sx += 2.0;
+    });
+    prepGroup.add(serpentineGroup);
+
+    // Passive Bubble Trap Chamber / Vent Well (at x = -42)
+    const ventWellRad = 2.6;
+    const ventWell = new THREE.Mesh(
+      new THREE.CylinderGeometry(ventWellRad, ventWellRad, prepH + 0.4, 32),
+      new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6, transmission: 0.85 })
+    );
+    ventWell.position.set(-42.0, -2.5, 0);
+    prepGroup.add(ventWell);
+
+    // Hydrophobic Vent Filter Disc on top
+    const ventFilter = new THREE.Mesh(
+      new THREE.CircleGeometry(ventWellRad - 0.2, 24),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+    );
+    ventFilter.position.set(-42.0, -0.85, 0);
+    ventFilter.rotation.x = -Math.PI / 2;
+    prepGroup.add(ventFilter);
+
+    // Vent Aperture Collar Ring
+    const ventRing = new THREE.Mesh(new THREE.TorusGeometry(ventWellRad, 0.22, 16, 32), steelMat);
+    ventRing.position.set(-42.0, -0.7, 0);
+    ventRing.rotation.x = Math.PI / 2;
+    prepGroup.add(ventRing);
+
+    // Outflow Channel from Vent to Outlet Port at x = -34
+    const prepExitChannel = new THREE.Mesh(new THREE.BoxGeometry(8.0, 0.45, 0.8), channelMat);
+    prepExitChannel.position.set(-38.0, -2.5, 0);
+    prepGroup.add(prepExitChannel);
+
+    const prepOutletCollar = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.2, 20), steelMat);
+    prepOutletCollar.position.set(-34.0, -0.5, 0);
+    prepGroup.add(prepOutletCollar);
+
+    scene.add(prepGroup);
+
+    // ==========================================
+    // 6. INLET TUBE & OBSERVATION ZONE (x ~ -34 to 0)
+    // Preserved original high-precision machine-vision camera & observation tube
+    // ==========================================
+    const inletGroup = new THREE.Group();
+    inletGroup.name = 'INLET_OBSERVATION';
+
+    const tubeLength = 34;
+    const tubeOuterRadius = 1.75;
+    const tubeInnerRadius = 1.25;
+
+    const tubeOuterGeo = new THREE.CylinderGeometry(tubeOuterRadius, tubeOuterRadius, tubeLength, 36);
+    tubeOuterGeo.rotateZ(Math.PI / 2);
+    const tubeOuterMesh = new THREE.Mesh(tubeOuterGeo, tubingMat);
+    tubeOuterMesh.position.set(-tubeLength / 2, 0, 0);
+    inletGroup.add(tubeOuterMesh);
+
+    const tubeFluidGeo = new THREE.CylinderGeometry(tubeInnerRadius, tubeInnerRadius, tubeLength, 24);
+    tubeFluidGeo.rotateZ(Math.PI / 2);
+    const tubeFluidMat = new THREE.MeshPhysicalMaterial({
+      color: 0x00d4c8,
+      transmission: 0.85,
       roughness: 0.1,
       metalness: 0.05,
       ior: 1.333,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.62,
+      depthWrite: false,
+    });
+    const tubeFluidMesh = new THREE.Mesh(tubeFluidGeo, tubeFluidMat);
+    tubeFluidMesh.position.set(-tubeLength / 2, 0, 0);
+    inletGroup.add(tubeFluidMesh);
+
+    // Precision CNC Stainless Steel Luer-Lock Fitting at Chip Port (x = 0)
+    const fittingGeo = new THREE.CylinderGeometry(2.4, 2.1, 4.8, 24);
+    fittingGeo.rotateZ(Math.PI / 2);
+    const fittingMesh = new THREE.Mesh(fittingGeo, steelMat);
+    fittingMesh.position.set(-2.2, 0, 0);
+    fittingMesh.castShadow = true;
+    inletGroup.add(fittingMesh);
+
+    const hexNutGeo = new THREE.CylinderGeometry(2.65, 2.65, 1.8, 6);
+    hexNutGeo.rotateZ(Math.PI / 2);
+    const hexNut = new THREE.Mesh(hexNutGeo, steelMat);
+    hexNut.position.set(-3.6, 0, 0);
+    inletGroup.add(hexNut);
+
+    const accentRingGeo = new THREE.TorusGeometry(2.6, 0.25, 16, 32);
+    const accentRingMat = new THREE.MeshStandardMaterial({ color: 0x00d4c8, metalness: 0.85, roughness: 0.25 });
+    const accentRing = new THREE.Mesh(accentRingGeo, accentRingMat);
+    accentRing.position.set(-1.0, 0, 0);
+    accentRing.rotation.y = Math.PI / 2;
+    inletGroup.add(accentRing);
+
+    scene.add(inletGroup);
+
+    // Bridge Tube connecting Prep Chip Outlet (x=-34) to Main Inlet Line (x=-34)
+    const prepBridge = createTube([
+      new THREE.Vector3(-34.0, -0.5, 0),
+      new THREE.Vector3(-34.0, 0.0, 0),
+    ], 0.6);
+    scene.add(prepBridge);
+
+    // Machine-Vision Optical Inspection Camera at x = -20
+    const obsZoneGroup = new THREE.Group();
+    obsZoneGroup.name = 'INLET_OBSERVATION';
+    const obsX = -20;
+
+    const clampGeo = new THREE.CylinderGeometry(2.9, 2.9, 5.5, 32);
+    clampGeo.rotateZ(Math.PI / 2);
+    const clampMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.85, roughness: 0.28 });
+    const clampMesh = new THREE.Mesh(clampGeo, clampMat);
+    clampMesh.position.set(obsX, 0, 0);
+    obsZoneGroup.add(clampMesh);
+
+    const quartzWindowGeo = new THREE.CylinderGeometry(2.92, 2.92, 2.2, 32, 1, false, 0, Math.PI);
+    quartzWindowGeo.rotateZ(Math.PI / 2);
+    const quartzWindowMat = new THREE.MeshPhysicalMaterial({ color: 0x00f0ff, transmission: 0.96, roughness: 0.04, transparent: true, opacity: 0.45 });
+    const quartzWindow = new THREE.Mesh(quartzWindowGeo, quartzWindowMat);
+    quartzWindow.position.set(obsX, 0, 0);
+    obsZoneGroup.add(quartzWindow);
+
+    const camBodyGeo = new THREE.BoxGeometry(5.2, 5.8, 5.2);
+    const camBodyMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.82, roughness: 0.24 });
+    const camBody = new THREE.Mesh(camBodyGeo, camBodyMat);
+    camBody.position.set(obsX, 6.2, 0);
+    camBody.castShadow = true;
+    obsZoneGroup.add(camBody);
+
+    [-1.2, 0, 1.2].forEach((offsetY) => {
+      const finGeo = new THREE.BoxGeometry(5.4, 0.4, 5.4);
+      const finMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.88, roughness: 0.3 });
+      const fin = new THREE.Mesh(finGeo, finMat);
+      fin.position.set(obsX, 6.2 + offsetY, 0);
+      obsZoneGroup.add(fin);
     });
 
-    const steelMat = new THREE.MeshStandardMaterial({
-      color: 0xd1d5db,
-      metalness: 0.95,
-      roughness: 0.2,
-    });
-
-    // Helper: Create 90° Elbow Tube Segment
-    const createTubeFromPoints = (points: THREE.Vector3[], radius = 0.42, mat = tubingMat) => {
-      const curve = new THREE.CatmullRomCurve3(points);
-      const geo = new THREE.TubeGeometry(curve, 40, radius, 16, false);
-      return new THREE.Mesh(geo, mat);
-    };
-
-    // ==========================================
-    // 4. RESERVOIR BOTTLES (Right: x ~ 48)
-    // Cell Media (Bottle 1) & Drug/Reagent (Bottle 2)
-    // ==========================================
-    const reservoirsGroup = new THREE.Group();
-    reservoirsGroup.name = 'RESERVOIRS';
-
-    const bottleGeo = new THREE.CylinderGeometry(3.2, 3.4, 9.5, 32);
-    const bottleGlassMat = new THREE.MeshPhysicalMaterial({
-      color: 0xf8fafc,
-      transparent: true,
-      opacity: 0.55,
-      transmission: 0.85,
-      roughness: 0.1,
-      ior: 1.5,
-    });
-
-    const bottleCapGeo = new THREE.CylinderGeometry(3.5, 3.5, 1.8, 32);
-    const blueCapMat = new THREE.MeshStandardMaterial({
-      color: 0x0284c7,
-      roughness: 0.35,
-      metalness: 0.2,
-    });
-
-    // Bottle 1: Cell Media Bottle (Pinkish/Red fluid)
-    const mediaBottle = new THREE.Mesh(bottleGeo, bottleGlassMat);
-    mediaBottle.position.set(48, 4.75, -8);
-    reservoirsGroup.add(mediaBottle);
-
-    const mediaFluidGeo = new THREE.CylinderGeometry(3.0, 3.2, 7.5, 24);
-    const mediaFluidMat = new THREE.MeshPhysicalMaterial({
-      color: 0xf43f5e,
-      transparent: true,
-      opacity: 0.6,
-      transmission: 0.75,
-    });
-    const mediaFluid = new THREE.Mesh(mediaFluidGeo, mediaFluidMat);
-    mediaFluid.position.set(48, 3.75, -8);
-    reservoirsGroup.add(mediaFluid);
-
-    const mediaCap = new THREE.Mesh(bottleCapGeo, blueCapMat);
-    mediaCap.position.set(48, 10.2, -8);
-    reservoirsGroup.add(mediaCap);
-
-    // Bottle 2: Drug / Reagent Bottle (Clear / Cyan fluid)
-    const drugBottle = new THREE.Mesh(bottleGeo, bottleGlassMat);
-    drugBottle.position.set(48, 4.75, 8);
-    reservoirsGroup.add(drugBottle);
-
-    const drugFluidMat = new THREE.MeshPhysicalMaterial({
-      color: 0xa855f7,
-      transparent: true,
-      opacity: 0.6,
-      transmission: 0.75,
-    });
-    const drugFluid = new THREE.Mesh(mediaFluidGeo, drugFluidMat);
-    drugFluid.position.set(48, 3.75, 8);
-    reservoirsGroup.add(drugFluid);
-
-    const drugCap = new THREE.Mesh(bottleCapGeo, blueCapMat);
-    drugCap.position.set(48, 10.2, 8);
-    reservoirsGroup.add(drugCap);
-
-    // 90° Overhead Rigid Inflow Tubing from Bottles down to Prep Chip
-    // Media Tube: from bottle (48, 11, -8) -> up to (48, 16, -8) -> bend to (36, 16, -4) -> down to Prep Chip inlet (36, 1.8, -4)
-    const mediaTubeMesh = createTubeFromPoints([
-      new THREE.Vector3(48, 10.5, -8),
-      new THREE.Vector3(48, 15.5, -8),
-      new THREE.Vector3(38, 15.5, -8),
-      new THREE.Vector3(38, 14.0, -3.2),
-      new THREE.Vector3(34, 4.5, -3.2),
-      new THREE.Vector3(34, 1.6, -3.2),
-    ], 0.45);
-    reservoirsGroup.add(mediaTubeMesh);
-
-    // Drug Tube: from bottle (48, 11, 8) -> up to (48, 14, 8) -> bend to (36, 14, 4) -> down to Prep Chip inlet (36, 1.8, 4)
-    const drugTubeMesh = createTubeFromPoints([
-      new THREE.Vector3(48, 10.5, 8),
-      new THREE.Vector3(48, 13.5, 8),
-      new THREE.Vector3(38, 13.5, 8),
-      new THREE.Vector3(38, 12.0, 3.2),
-      new THREE.Vector3(34, 4.5, 3.2),
-      new THREE.Vector3(34, 1.6, 3.2),
-    ], 0.45);
-    reservoirsGroup.add(drugTubeMesh);
-
-    scene.add(reservoirsGroup);
-
-    // ==========================================
-    // 5. PREP & BUBBLE TRAP CHIP (Middle-Right: x ~ 22)
-    // 3-Layer Cartridge: Dual Inlets, Y-Mixer, Serpentine Channel, Passive Vent Well
-    // ==========================================
-    const prepChipGroup = new THREE.Group();
-    prepChipGroup.name = 'BUBBLE_TRAP';
-    const prepX = 22.0;
-
-    // Cartridge Base: Soft Greenish/Teal Tinted Glass/PDMS (matching Image 1 & 2)
-    const prepWidth = 28;
-    const prepDepth = 12;
-    const prepHeight = 2.4;
-
-    const prepMat = new THREE.MeshPhysicalMaterial({
-      color: 0xccfbf1,
-      transparent: true,
-      opacity: 0.68,
-      transmission: 0.88,
-      roughness: 0.08,
-      metalness: 0.04,
-      ior: 1.48,
-    });
-    const prepBody = new THREE.Mesh(new THREE.BoxGeometry(prepWidth, prepHeight, prepDepth), prepMat);
-    prepBody.position.set(prepX, prepHeight / 2, 0);
-    prepBody.castShadow = true;
-    prepChipGroup.add(prepBody);
-
-    // Stainless Inflow Gaskets on top surface for the 2 inlet ports
-    [-3.2, 3.2].forEach((zOff) => {
-      const portGasket = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.9, 0.9, 0.8, 20),
-        steelMat
-      );
-      portGasket.position.set(34, prepHeight + 0.4, zOff);
-      prepChipGroup.add(portGasket);
-    });
-
-    // Internal Channel: Dual Inlets -> Y-Junction -> Serpentine Mixer -> Bubble Trap Well -> Outlet
-    // A. Y-Junction Channel
-    const yMixChannelMat = new THREE.MeshPhysicalMaterial({
-      color: 0x00d4c8,
-      emissive: 0x0f766e,
-      emissiveIntensity: 0.6,
-      transparent: true,
-      opacity: 0.85,
-    });
-
-    // Inflow Channels converging at Y
-    const yBranch1 = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.4, 0.6), yMixChannelMat);
-    yBranch1.position.set(31.5, prepHeight / 2, -1.8);
-    yBranch1.rotation.y = 0.45;
-    prepChipGroup.add(yBranch1);
-
-    const yBranch2 = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.4, 0.6), yMixChannelMat);
-    yBranch2.position.set(31.5, prepHeight / 2, 1.8);
-    yBranch2.rotation.y = -0.45;
-    prepChipGroup.add(yBranch2);
-
-    // B. Serpentine Chaotic Mixing Channel (Square zigzag pattern between x=28 and x=22)
-    const serpentineGroup = new THREE.Group();
-    const zigzags = [
-      [-1.8, 1.8], [1.8, -1.8], [-1.8, 1.8], [1.8, -1.8]
-    ];
-    let currX = 29.0;
-    zigzags.forEach(([z1, z2], idx) => {
-      const zBar = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, Math.abs(z2 - z1)), yMixChannelMat);
-      zBar.position.set(currX, prepHeight / 2, (z1 + z2) / 2);
-      serpentineGroup.add(zBar);
-
-      const xBar = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 0.5), yMixChannelMat);
-      xBar.position.set(currX - 0.7, prepHeight / 2, z2);
-      serpentineGroup.add(xBar);
-      currX -= 1.4;
-    });
-    prepChipGroup.add(serpentineGroup);
-
-    // C. Vertical Cylindrical Bubble Trap Chamber / Passive Vent Well (at x = 20)
-    const ventWellRadius = 2.4;
-    const ventWellGeo = new THREE.CylinderGeometry(ventWellRadius, ventWellRadius, prepHeight + 0.2, 32);
-    const ventWellMat = new THREE.MeshPhysicalMaterial({
-      color: 0x38bdf8,
-      transparent: true,
-      opacity: 0.5,
-      transmission: 0.85,
-    });
-    const ventWell = new THREE.Mesh(ventWellGeo, ventWellMat);
-    ventWell.position.set(20.0, prepHeight / 2, 0);
-    prepChipGroup.add(ventWell);
-
-    // Vent Aperture Ring on top of cartridge
-    const ventApertureRing = new THREE.Mesh(
-      new THREE.TorusGeometry(ventWellRadius, 0.2, 16, 32),
-      steelMat
+    const lensBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.8, 2.1, 1.4, 32),
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.92, roughness: 0.2 })
     );
-    ventApertureRing.position.set(20.0, prepHeight + 0.1, 0);
-    ventApertureRing.rotation.x = Math.PI / 2;
-    prepChipGroup.add(ventApertureRing);
+    lensBase.position.set(obsX, 3.2, 0);
+    obsZoneGroup.add(lensBase);
 
-    // Passive Hydrophobic Gas Vent Membrane Filter Disc
-    const ventFilter = new THREE.Mesh(
-      new THREE.CircleGeometry(ventWellRadius - 0.2, 24),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+    const knurlRing = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.85, 1.85, 0.6, 32),
+      new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.96, roughness: 0.15 })
     );
-    ventFilter.position.set(20.0, prepHeight - 0.1, 0);
-    ventFilter.rotation.x = -Math.PI / 2;
-    prepChipGroup.add(ventFilter);
+    knurlRing.position.set(obsX, 2.7, 0);
+    obsZoneGroup.add(knurlRing);
 
-    // Outflow Channel from Bubble Trap Well to chip exit (x = 10)
-    const outChannel = new THREE.Mesh(new THREE.BoxGeometry(10, 0.4, 0.6), yMixChannelMat);
-    outChannel.position.set(15.0, prepHeight / 2, 0);
-    prepChipGroup.add(outChannel);
-
-    // Outlet Port Collar at x = 10
-    const prepOutletCollar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.9, 0.9, 0.8, 20),
-      steelMat
+    const lensFront = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.4, 1.7, 1.2, 32),
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.92, roughness: 0.2 })
     );
-    prepOutletCollar.position.set(10.0, prepHeight + 0.4, 0);
-    prepChipGroup.add(prepOutletCollar);
+    lensFront.position.set(obsX, 1.9, 0);
+    obsZoneGroup.add(lensFront);
 
-    scene.add(prepChipGroup);
+    const glassElem = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.25, 1.25, 0.2, 32),
+      new THREE.MeshPhysicalMaterial({ color: 0x10b981, transmission: 0.85, roughness: 0.05, metalness: 0.2, ior: 1.65, transparent: true, opacity: 0.85 })
+    );
+    glassElem.position.set(obsX, 1.3, 0);
+    obsZoneGroup.add(glassElem);
 
-    // Bridge Tubing: connecting Prep Chip Outlet (x=10) to Cell Culture Chip Inlet (x=2)
-    const prepToOocTube = createTubeFromPoints([
-      new THREE.Vector3(10.0, prepHeight + 0.4, 0),
-      new THREE.Vector3(10.0, prepHeight + 2.4, 0),
-      new THREE.Vector3(2.0, prepHeight + 2.4, 0),
-      new THREE.Vector3(2.0, 1.8, 0),
-    ], 0.42);
-    scene.add(prepToOocTube);
+    const laserBeamMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 3.2, 16),
+      new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.45 })
+    );
+    laserBeamMesh.position.set(obsX, 1.8, 0);
+    laserBeamMesh.visible = false;
+    obsZoneGroup.add(laserBeamMesh);
+
+    const targetSpotRing = new THREE.Mesh(
+      new THREE.TorusGeometry(2.0, 0.06, 16, 48),
+      new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.8 })
+    );
+    targetSpotRing.rotation.x = Math.PI / 2;
+    targetSpotRing.position.set(obsX, 0, 0);
+    targetSpotRing.visible = false;
+    obsZoneGroup.add(targetSpotRing);
+
+    const stanchion = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.8, 0.8, 8, 24),
+      new THREE.MeshStandardMaterial({ color: 0xcfd8dc, metalness: 0.95, roughness: 0.2 })
+    );
+    stanchion.position.set(obsX, 2, -3.2);
+    obsZoneGroup.add(stanchion);
+
+    scene.add(obsZoneGroup);
 
     // ==========================================
-    // 6. CELL CULTURE CHIP (Center: x ~ -8 to +2)
-    // The High-Fidelity Organ-on-Chip (Kept identical as requested)
-    // Borosilicate slide, PDMS block, micro-porous membrane, cell culture layer
+    // 7. REAL SCIENTIFIC DUAL-LAYER ORGAN-ON-CHIP (x ~ 21)
+    // 100% Original Pristine Organ-on-Chip Model
     // ==========================================
     const oocGroup = new THREE.Group();
     oocGroup.name = 'ORGAN_ON_CHIP';
-    const oocCenterX = -5.0;
-    const oocWidth = 26;
-    const oocDepth = 12;
-    const oocHeight = 3.2;
 
-    // A. Microscope Slide Base
-    const oocSlide = new THREE.Mesh(
-      new THREE.BoxGeometry(oocWidth + 6, 0.8, oocDepth + 2),
-      new THREE.MeshPhysicalMaterial({ color: 0xecfdf5, transmission: 0.95, roughness: 0.05, opacity: 0.7, transparent: true })
-    );
-    oocSlide.position.set(oocCenterX, 0.4, 0);
-    oocSlide.receiveShadow = true;
-    oocGroup.add(oocSlide);
+    const chipWidth = 40;
+    const chipHeight = 5.4;
+    const chipDepth = 20;
+    const chipCenterX = 21.0;
 
-    // B. Clear PDMS Elastomer Body
-    const oocBodyMat = new THREE.MeshPhysicalMaterial({
-      color: 0xf0fdfa,
-      transmission: 0.96,
+    // Procedural Porous Membrane Texture
+    const createPorousMembraneTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 256;
+      const ctx = c.getContext('2d');
+      if (!ctx) return null;
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, 512, 256);
+      ctx.fillStyle = '#1e293b';
+      for (let px = 4; px < 512; px += 8) {
+        for (let py = 4; py < 256; py += 8) {
+          ctx.beginPath();
+          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      const t = new THREE.CanvasTexture(c);
+      t.wrapS = THREE.RepeatWrapping;
+      t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(3, 1.5);
+      return t;
+    };
+    const membraneTexture = createPorousMembraneTexture();
+
+    // Microscope Slide Base
+    const slideBaseGeo = new THREE.BoxGeometry(chipWidth + 10, 1.2, chipDepth + 4);
+    const slideBaseMat = new THREE.MeshPhysicalMaterial({
+      color: 0xecfdf5,
+      transmission: 0.95,
       roughness: 0.04,
+      metalness: 0.08,
+      ior: 1.515,
+      transparent: true,
+      opacity: 0.65,
+      depthWrite: false,
+    });
+    const slideBaseMesh = new THREE.Mesh(slideBaseGeo, slideBaseMat);
+    slideBaseMesh.position.set(chipCenterX, -chipHeight / 2 - 0.6, 0);
+    slideBaseMesh.receiveShadow = true;
+    oocGroup.add(slideBaseMesh);
+
+    // Frosted label area on microscope slide edge
+    const frostedLabel = new THREE.Mesh(
+      new THREE.BoxGeometry(8.5, 1.25, chipDepth + 3.8),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.85, metalness: 0.1, transparent: true, opacity: 0.75 })
+    );
+    frostedLabel.position.set(chipCenterX + chipWidth / 2 + 1.5, -chipHeight / 2 - 0.6, 0);
+    oocGroup.add(frostedLabel);
+
+    // Optical PDMS Elastomer Body
+    const chipBodyGeo = new THREE.BoxGeometry(chipWidth, chipHeight, chipDepth);
+    const chipBodyMat = new THREE.MeshPhysicalMaterial({
+      color: 0xf0fdfa,
+      transmission: 0.97,
+      roughness: 0.03,
       metalness: 0.02,
       ior: 1.43,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.42,
+      depthWrite: false,
     });
-    const oocBody = new THREE.Mesh(new THREE.BoxGeometry(oocWidth, oocHeight, oocDepth), oocBodyMat);
-    oocBody.position.set(oocCenterX, oocHeight / 2 + 0.8, 0);
-    oocBody.castShadow = true;
-    oocGroup.add(oocBody);
+    const chipBodyMesh = new THREE.Mesh(chipBodyGeo, chipBodyMat);
+    chipBodyMesh.position.set(chipCenterX, 0, 0);
+    chipBodyMesh.castShadow = true;
+    oocGroup.add(chipBodyMesh);
 
-    // C. Micro-Porous Permeable Membrane (Cell culture interface)
-    const oocMembrane = new THREE.Mesh(
-      new THREE.PlaneGeometry(18, 5.5),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+    const chipEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(chipBodyGeo),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 })
     );
-    oocMembrane.position.set(oocCenterX, oocHeight / 2 + 0.8, 0);
-    oocMembrane.rotation.x = -Math.PI / 2;
-    oocGroup.add(oocMembrane);
+    chipBodyMesh.add(chipEdges);
 
-    // D. Upper Apical Cell Culture Channel (Organ Tissue Layer)
-    const cellChamberGeo = new THREE.BoxGeometry(16, 0.6, 3.2);
-    const cellChamberMat = new THREE.MeshStandardMaterial({
-      color: 0x00d2b4,
-      emissive: 0x00ae9c,
-      emissiveIntensity: 0.4,
+    // Central Porous Membrane Scaffold
+    const membraneGeo = new THREE.PlaneGeometry(26, 9.5);
+    const membraneMat = new THREE.MeshStandardMaterial({
+      map: membraneTexture || undefined,
+      color: 0xffffff,
+      roughness: 0.35,
+      metalness: 0.15,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.88,
+      side: THREE.DoubleSide,
     });
-    const cellChamber = new THREE.Mesh(cellChamberGeo, cellChamberMat);
-    cellChamber.position.set(oocCenterX, oocHeight / 2 + 1.2, 0);
-    oocGroup.add(cellChamber);
+    const membraneMesh = new THREE.Mesh(membraneGeo, membraneMat);
+    membraneMesh.rotation.x = -Math.PI / 2;
+    membraneMesh.position.set(chipCenterX, 0, 0);
+    oocGroup.add(membraneMesh);
 
-    // E. Lower Vascular Shear Flow Channel
-    const vascChamberMat = new THREE.MeshStandardMaterial({
+    const membraneFrame = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(26.2, 0.15, 9.7)),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7 })
+    );
+    membraneFrame.position.set(chipCenterX, 0, 0);
+    oocGroup.add(membraneFrame);
+
+    // Upper Apical Microchannel (Blue)
+    const upperChannelGroup = new THREE.Group();
+    const upperChMat = new THREE.MeshPhysicalMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.75,
+      transmission: 0.65,
+      roughness: 0.08,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.88,
+    });
+
+    const upperMainGeo = new THREE.BoxGeometry(24, 1.15, 2.6);
+    const upperMainMesh = new THREE.Mesh(upperMainGeo, upperChMat);
+    upperMainMesh.position.set(chipCenterX, 0.8, 0);
+    upperChannelGroup.add(upperMainMesh);
+
+    [-3.8, 3.8].forEach((zOffset) => {
+      const branchGeo = new THREE.BoxGeometry(4.8, 1.0, 1.2);
+      const branchMesh = new THREE.Mesh(branchGeo, upperChMat);
+      branchMesh.position.set(chipCenterX - 13.5, 0.8, zOffset * 0.55);
+      branchMesh.rotation.y = zOffset > 0 ? 0.45 : -0.45;
+      upperChannelGroup.add(branchMesh);
+
+      const portWellGeo = new THREE.CylinderGeometry(1.2, 1.2, chipHeight / 2 - 0.3, 24);
+      const portWellMesh = new THREE.Mesh(portWellGeo, upperChMat);
+      portWellMesh.position.set(chipCenterX - 15.5, chipHeight / 4 + 0.6, zOffset);
+      upperChannelGroup.add(portWellMesh);
+
+      const collarGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.8, 24);
+      const collarMesh = new THREE.Mesh(collarGeo, steelMat);
+      collarMesh.position.set(chipCenterX - 15.5, chipHeight / 2 + 0.4, zOffset);
+      upperChannelGroup.add(collarMesh);
+    });
+
+    [-3.8, 3.8].forEach((zOffset) => {
+      const branchGeo = new THREE.BoxGeometry(4.8, 1.0, 1.2);
+      const branchMesh = new THREE.Mesh(branchGeo, upperChMat);
+      branchMesh.position.set(chipCenterX + 13.5, 0.8, zOffset * 0.55);
+      branchMesh.rotation.y = zOffset > 0 ? -0.45 : 0.45;
+      upperChannelGroup.add(branchMesh);
+
+      const portWellGeo = new THREE.CylinderGeometry(1.2, 1.2, chipHeight / 2 - 0.3, 24);
+      const portWellMesh = new THREE.Mesh(portWellGeo, upperChMat);
+      portWellMesh.position.set(chipCenterX + 15.5, chipHeight / 4 + 0.6, zOffset);
+      upperChannelGroup.add(portWellMesh);
+
+      const collarGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.8, 24);
+      const collarMesh = new THREE.Mesh(collarGeo, steelMat);
+      collarMesh.position.set(chipCenterX + 15.5, chipHeight / 2 + 0.4, zOffset);
+      upperChannelGroup.add(collarMesh);
+    });
+
+    oocGroup.add(upperChannelGroup);
+
+    // Lower Vascular Channel (Orange)
+    const lowerChannelGroup = new THREE.Group();
+    const lowerChMat = new THREE.MeshPhysicalMaterial({
       color: 0xf97316,
       emissive: 0xc2410c,
-      emissiveIntensity: 0.35,
+      emissiveIntensity: 0.75,
+      transmission: 0.65,
+      roughness: 0.08,
+      metalness: 0.1,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.88,
     });
-    const vascChamber = new THREE.Mesh(cellChamberGeo, vascChamberMat);
-    vascChamber.position.set(oocCenterX, oocHeight / 2 + 0.4, 0);
-    oocGroup.add(vascChamber);
 
-    // Inlet and Outlet Ports on OoC
-    const oocInletCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.8, 20), steelMat);
-    oocInletCollar.position.set(2.0, oocHeight + 1.0, 0);
-    oocGroup.add(oocInletCollar);
+    const lowerMainGeo = new THREE.BoxGeometry(24, 1.15, 2.6);
+    const lowerMainMesh = new THREE.Mesh(lowerMainGeo, lowerChMat);
+    lowerMainMesh.position.set(chipCenterX, -0.8, 0);
+    lowerChannelGroup.add(lowerMainMesh);
 
-    const oocOutletCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.8, 20), steelMat);
-    oocOutletCollar.position.set(oocCenterX - 11.0, oocHeight + 1.0, 0);
-    oocGroup.add(oocOutletCollar);
+    const lowerInletStem = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.0, 1.4), lowerChMat);
+    lowerInletStem.position.set(chipCenterX - 14.5, -0.8, 0);
+    lowerChannelGroup.add(lowerInletStem);
 
-    // Organ-on-Chip Glow Light
-    const chipGlow = new THREE.PointLight(0x00d2b4, 1.8, 25);
-    chipGlow.position.set(oocCenterX, 3.5, 0);
-    oocGroup.add(chipGlow);
+    const lowerInletWell = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, chipHeight - 1.2, 24), lowerChMat);
+    lowerInletWell.position.set(chipCenterX - 17.0, 0, 0);
+    lowerChannelGroup.add(lowerInletWell);
+
+    const lowerInletCollar = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.8, 24), steelMat);
+    lowerInletCollar.position.set(chipCenterX - 17.0, chipHeight / 2 + 0.4, 0);
+    lowerChannelGroup.add(lowerInletCollar);
+
+    const lowerOutletStem = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.0, 1.4), lowerChMat);
+    lowerOutletStem.position.set(chipCenterX + 14.5, -0.8, 0);
+    lowerChannelGroup.add(lowerOutletStem);
+
+    const lowerOutletWell = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, chipHeight - 1.2, 24), lowerChMat);
+    lowerOutletWell.position.set(chipCenterX + 17.0, 0, 0);
+    lowerChannelGroup.add(lowerOutletWell);
+
+    const lowerOutletCollar = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.8, 24), steelMat);
+    lowerOutletCollar.position.set(chipCenterX + 17.0, chipHeight / 2 + 0.4, 0);
+    lowerChannelGroup.add(lowerOutletCollar);
+
+    oocGroup.add(lowerChannelGroup);
+
+    // Side Vacuum Chambers
+    const sideChamberMat = new THREE.MeshPhysicalMaterial({ color: 0x1e293b, transmission: 0.82, roughness: 0.2, transparent: true, opacity: 0.45 });
+    const sideChamberGeo = new THREE.BoxGeometry(22, 3.4, 2.2);
+
+    const sideChamberLeft = new THREE.Mesh(sideChamberGeo, sideChamberMat);
+    sideChamberLeft.position.set(chipCenterX, 0, -4.8);
+    oocGroup.add(sideChamberLeft);
+
+    const sideChamberRight = new THREE.Mesh(sideChamberGeo, sideChamberMat);
+    sideChamberRight.position.set(chipCenterX, 0, 4.8);
+    oocGroup.add(sideChamberRight);
 
     scene.add(oocGroup);
 
-    // Bridge Tubing: connecting Cell Culture Chip Outlet (x=-16) to Sensor Manifold (x=-26)
-    const oocToSensorTube = createTubeFromPoints([
-      new THREE.Vector3(oocCenterX - 11.0, oocHeight + 1.0, 0),
-      new THREE.Vector3(oocCenterX - 11.0, oocHeight + 2.2, 0),
-      new THREE.Vector3(-25.0, oocHeight + 2.2, 0),
-      new THREE.Vector3(-25.0, 3.2, 0),
-    ], 0.42);
-    scene.add(oocToSensorTube);
-
     // ==========================================
-    // 7. SENSOR MANIFOLD (Left: x ~ -28)
-    // Bronze Block with Electrochemical Sensor Probe (pH, DO & Flow)
+    // 8. SENSOR MANIFOLD (Right: x ~ 56)
+    // Bronze CNC block with Electrochemical Sensor Probe (pH, DO & Flow)
     // ==========================================
     const sensorGroup = new THREE.Group();
     sensorGroup.name = 'SENSOR_MANIFOLD';
-    const sensorX = -28.0;
+    const sensorX = 56.0;
 
-    // Solid Bronze/Copper CNC Manifold Block (matching Image 1)
-    const manifoldGeo = new THREE.BoxGeometry(9.5, 6.0, 9.5);
-    const bronzeMat = new THREE.MeshStandardMaterial({
-      color: 0xb45309, // Rich bronze/copper
-      metalness: 0.85,
-      roughness: 0.35,
-    });
-    const manifoldBlock = new THREE.Mesh(manifoldGeo, bronzeMat);
-    manifoldBlock.position.set(sensorX, 3.0, 0);
+    // Bronze Manifold Block (Image 1)
+    const manifoldBlock = new THREE.Mesh(
+      new THREE.BoxGeometry(10.0, 6.5, 10.0),
+      new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.85, roughness: 0.32 })
+    );
+    manifoldBlock.position.set(sensorX, -4.75, 0);
     manifoldBlock.castShadow = true;
     sensorGroup.add(manifoldBlock);
 
-    // Sensor Probe Well Collar (Black / Dark Slate)
-    const probeCollarGeo = new THREE.CylinderGeometry(2.4, 2.6, 1.4, 32);
-    const probeCollarMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
-    const probeCollar = new THREE.Mesh(probeCollarGeo, probeCollarMat);
-    probeCollar.position.set(sensorX, 6.7, 0);
+    // Probe Collar & Sensing Stanchion
+    const probeCollar = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.6, 32), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 }));
+    probeCollar.position.set(sensorX, -1.0, 0);
     sensorGroup.add(probeCollar);
 
-    // Vertical Electrochemical Sensor Probe Stanchion
-    const probeTipGeo = new THREE.CylinderGeometry(1.3, 1.3, 7.5, 32);
-    const probeTipMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.2 });
-    const probeTip = new THREE.Mesh(probeTipGeo, probeTipMat);
-    probeTip.position.set(sensorX, 10.5, 0);
-    sensorGroup.add(probeTip);
+    const probeBody = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 8.5, 32), steelMat);
+    probeBody.position.set(sensorX, 3.5, 0);
+    sensorGroup.add(probeBody);
 
-    // Probe Top Cable Strain Relief
-    const cableRelief = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.8, 1.1, 1.8, 20),
-      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 })
-    );
-    cableRelief.position.set(sensorX, 14.8, 0);
-    sensorGroup.add(cableRelief);
+    const probeCap = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.2, 2.0, 24), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 }));
+    probeCap.position.set(sensorX, 8.0, 0);
+    sensorGroup.add(probeCap);
 
-    // Sensor Status Telemetry Ring (Teal -> Red on bubble/alert)
-    const sensorRingMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-    const sensorRing = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.1, 16, 32), sensorRingMat);
-    sensorRing.position.set(sensorX, 7.5, 0);
-    sensorRing.rotation.x = Math.PI / 2;
-    sensorGroup.add(sensorRing);
+    // Bridge tube from OoC outlet (x=41) to Sensor Manifold (x=51)
+    const oocToSensor = createTube([
+      new THREE.Vector3(41.0, 0, 0),
+      new THREE.Vector3(46.0, 1.2, 0),
+      new THREE.Vector3(51.0, -4.5, 0),
+    ], 0.5);
+    sensorGroup.add(oocToSensor);
 
-    // Effluent Discharge Tube: Exiting left side marked "TO WASTE"
-    const wasteTube = createTubeFromPoints([
-      new THREE.Vector3(sensorX - 4.75, 2.5, 0),
-      new THREE.Vector3(sensorX - 16.0, 2.5, 0),
-      new THREE.Vector3(sensorX - 22.0, 0.5, 0),
-    ], 0.45);
+    // Effluent tube to Waste Beaker
+    const wasteTube = createTube([
+      new THREE.Vector3(61.0, -4.5, 0),
+      new THREE.Vector3(70.0, -4.5, 0),
+      new THREE.Vector3(76.0, -2.0, 0),
+    ], 0.5);
     sensorGroup.add(wasteTube);
 
-    // Effluent Waste Container on table edge
+    // Glass Waste Collection Beaker labeled TO WASTE
     const wasteBeaker = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.0, 3.4, 6.5, 24),
+      new THREE.CylinderGeometry(3.6, 4.0, 8.5, 24),
       new THREE.MeshPhysicalMaterial({ color: 0x64748b, transparent: true, opacity: 0.45, transmission: 0.7 })
     );
-    wasteBeaker.position.set(sensorX - 22.0, 3.25, 0);
+    wasteBeaker.position.set(76.0, -3.75, 0);
     sensorGroup.add(wasteBeaker);
 
     scene.add(sensorGroup);
 
     // ==========================================
-    // 8. FLOW PATH SPLINE & TRACER PARTICLES
-    // Continuous trajectory through the whole system
+    // 9. DYNAMIC TRACER PARTICLES & REFRACTIVE BUBBLE
     // ==========================================
-    const fullFlowPath = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(48, 10.5, -8),
-      new THREE.Vector3(38, 15.5, -8),
-      new THREE.Vector3(34, 1.8, -3.2),  // Prep inlet
-      new THREE.Vector3(29, 1.2, 0),     // Serpentine
-      new THREE.Vector3(20, 1.2, 0),     // Bubble Trap Well
-      new THREE.Vector3(10, 2.4, 0),     // Prep outlet
-      new THREE.Vector3(2.0, 2.4, 0),    // OoC inlet
-      new THREE.Vector3(-5.0, 2.4, 0),   // OoC center
-      new THREE.Vector3(-16.0, 2.4, 0),  // OoC outlet
-      new THREE.Vector3(-28.0, 3.0, 0),  // Sensor manifold
-      new THREE.Vector3(-44.0, 1.0, 0),  // Waste
-    ]);
+    const createCircularParticleTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 64;
+      c.height = 64;
+      const ctx = c.getContext('2d');
+      if (!ctx) return null;
+      const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+      grad.addColorStop(0.3, 'rgba(0, 240, 255, 0.9)');
+      grad.addColorStop(0.6, 'rgba(0, 200, 230, 0.35)');
+      grad.addColorStop(1, 'rgba(0, 160, 210, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    };
+    const particleTexture = createCircularParticleTexture();
 
-    const NUM_TRACERS = 60;
-    const tracerGeo = new THREE.SphereGeometry(0.2, 12, 12);
-    const tracerMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-    const tracers: { mesh: THREE.Mesh; progress: number }[] = [];
+    const PARTICLE_COUNT = 160;
+    const particlePositions = new Float32Array(PARTICLE_COUNT * 3);
+    const particleProgress = new Float32Array(PARTICLE_COUNT);
+    const particleSpeeds = new Float32Array(PARTICLE_COUNT);
 
-    for (let i = 0; i < NUM_TRACERS; i++) {
-      const mesh = new THREE.Mesh(tracerGeo, tracerMat);
-      scene.add(mesh);
-      tracers.push({ mesh, progress: i / NUM_TRACERS });
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particleProgress[i] = Math.random();
+      particleSpeeds[i] = 0.8 + Math.random() * 0.4;
     }
 
-    // ==========================================
-    // 9. DYNAMIC 3D REFRACTIVE BUBBLE
-    // ==========================================
-    const bubbleGeo = new THREE.SphereGeometry(0.7, 24, 24);
+    const particlesGeo = new THREE.BufferGeometry();
+    particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particlesMat = new THREE.PointsMaterial({
+      map: particleTexture || undefined,
+      color: 0x00f0ff,
+      size: 0.95,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const particles = new THREE.Points(particlesGeo, particlesMat);
+    scene.add(particles);
+
+    // Dynamic 3D Refractive Bubble
+    const bubbleGeo = new THREE.SphereGeometry(1.2, 32, 32);
     const bubbleMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
-      transparent: true,
-      opacity: 0.9,
-      transmission: 0.95,
-      roughness: 0.05,
+      transmission: 0.97,
+      roughness: 0.03,
+      metalness: 0.05,
       ior: 1.15,
-      reflectivity: 0.9,
+      transparent: true,
+      opacity: 0.92,
+      clearcoat: 1.0,
     });
     const bubbleMesh = new THREE.Mesh(bubbleGeo, bubbleMat);
+    bubbleMesh.position.set(-20, 0, 0);
     bubbleMesh.visible = false;
     scene.add(bubbleMesh);
 
+    // Full Fluid Flow Trajectory Spline
+    const flowSpline = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-76, 5.0, -8),
+      new THREE.Vector3(-66, 8.5, -4.5),
+      new THREE.Vector3(-60, -0.5, -4.5),  // Prep inlet
+      new THREE.Vector3(-55, -2.5, 0),     // Y-junction
+      new THREE.Vector3(-42, -2.5, 0),     // Bubble trap well
+      new THREE.Vector3(-34, 0, 0),        // Observation tube entry
+      new THREE.Vector3(-20, 0, 0),        // Camera observation spot
+      new THREE.Vector3(0, 0, 0),          // OoC entry
+      new THREE.Vector3(chipCenterX, 0.8, 0), // OoC apical chamber
+      new THREE.Vector3(41.0, 0, 0),       // OoC outlet
+      new THREE.Vector3(56.0, -4.5, 0),    // Sensor manifold
+      new THREE.Vector3(76.0, -3.75, 0),   // Waste
+    ]);
+
     // ==========================================
-    // 10. RENDER LOOP & REAL-TIME ANIMATION
+    // 10. ANIMATION & TELEMETRY FLOW LOOP
     // ==========================================
     let reqId: number;
     const clock = new THREE.Clock();
+
+    // Camera Presets
+    const PRESETS: Record<CameraPreset, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
+      FULL_SYSTEM:       { pos: new THREE.Vector3(-4, 18, 54), target: new THREE.Vector3(-4, 0, 0) },
+      RESERVOIRS:        { pos: new THREE.Vector3(-74, 14, 28), target: new THREE.Vector3(-74, 1, 0) },
+      BUBBLE_TRAP:       { pos: new THREE.Vector3(-46, 12, 26), target: new THREE.Vector3(-46, -1, 0) },
+      INLET_OBSERVATION: { pos: new THREE.Vector3(-20, 4, 20), target: new THREE.Vector3(-20, 0, 0) },
+      ORGAN_ON_CHIP:     { pos: new THREE.Vector3(chipCenterX, 6, 26), target: new THREE.Vector3(chipCenterX, 0, 0) },
+      SENSOR_MANIFOLD:   { pos: new THREE.Vector3(56, 14, 28), target: new THREE.Vector3(56, -1, 0) },
+    };
 
     const animate = () => {
       reqId = requestAnimationFrame(animate);
       const delta = clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
-      // Flow rate determination
+      // Flow Rate Evaluation
       const isLiveHardware = envModeRef.current === 'HARDWARE_TWIN';
       const activeFlow = isLiveHardware
         ? (telemetryRef.current.flow_rate || 450)
         : (virtParamsRef.current.flow_rate || 450);
 
       const isFlowing = isLiveHardware ? true : isSimRef.current;
-      const speed = isFlowing ? (activeFlow / 450.0) * delta * 0.15 : 0;
+      const speed = isFlowing ? (activeFlow / 450.0) * delta * 0.16 : 0;
 
-      // Update Organ Tissue Styling
+      // Update Tissue Morphology & Color
       const currentOrgan = organRef.current || 'lung';
       const organTheme = ORGAN_THEMES[currentOrgan] || ORGAN_THEMES.lung;
-      cellChamberMat.color.setHex(organTheme.tissueColor);
-      cellChamberMat.emissive.setHex(organTheme.fluidColor);
-      chipGlow.color.setHex(organTheme.tissueColor);
+      upperChMat.color.setHex(organTheme.tissueColor);
+      upperChMat.emissive.setHex(organTheme.fluidColor);
+      chipTopLight.color.setHex(organTheme.tissueColor);
 
-      // Heart pulsation or lung respiration flex
       if (currentOrgan === 'heart') {
-        const pulse = 1.0 + Math.sin(elapsed * 6.5) * 0.03;
-        cellChamber.scale.set(1.0, pulse, 1.0);
+        const pulse = 1.0 + Math.sin(elapsed * 6.5) * 0.04;
+        upperMainMesh.scale.set(1.0, pulse, 1.0);
       } else if (currentOrgan === 'lung') {
-        const breath = 1.0 + Math.sin(elapsed * 2.2) * 0.02;
-        cellChamber.scale.set(1.0, breath, 1.0);
+        const breath = 1.0 + Math.sin(elapsed * 2.2) * 0.025;
+        upperMainMesh.scale.set(1.0, breath, 1.0);
       } else {
-        cellChamber.scale.set(1.0, 1.0, 1.0);
+        upperMainMesh.scale.set(1.0, 1.0, 1.0);
       }
 
       // Animate Fluid Tracer Particles
-      tracers.forEach((t) => {
+      const posAttr = particlesGeo.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
         if (isFlowing) {
-          t.progress = (t.progress + speed) % 1.0;
+          particleProgress[i] = (particleProgress[i] + speed * particleSpeeds[i]) % 1.0;
         }
-        const pt = fullFlowPath.getPoint(t.progress);
-        t.mesh.position.copy(pt);
-        t.mesh.visible = isFlowing;
-      });
+        const pt = flowSpline.getPoint(particleProgress[i]);
+        posAttr.setXYZ(i, pt.x, pt.y, pt.z);
+      }
+      posAttr.needsUpdate = true;
+      particles.visible = isFlowing;
 
       // Animate Bubble Tracking
       let isBubbleVisible = false;
-      let bubblePt = new THREE.Vector3();
+      let bubblePoint = new THREE.Vector3();
 
       if (isLiveHardware) {
-        // Hardware mode: bubble spot alert
         if (bubbleSpotRef.current || telemetryRef.current.bubble_detected) {
           isBubbleVisible = true;
-          // Position right around the bubble trap well / optical zone (x=20)
-          bubblePt = fullFlowPath.getPoint(0.35);
-          sensorRingMat.color.setHex(0xef4444);
+          bubblePoint.set(-20, 0, 0); // Positioned directly under observation camera
+          laserBeamMesh.visible = true;
+          targetSpotRing.visible = true;
         } else {
-          sensorRingMat.color.setHex(0x00f0ff);
+          laserBeamMesh.visible = false;
+          targetSpotRing.visible = false;
         }
       } else {
-        // Virtual lab simulation mode
         if (simBubbleActiveRef.current && simBubblePosRef.current > 0) {
           isBubbleVisible = true;
           const pos = Math.min(Math.max(simBubblePosRef.current, 0.01), 0.98);
-          bubblePt = fullFlowPath.getPoint(pos);
+          bubblePoint = flowSpline.getPoint(pos);
 
-          // If inside bubble trap well (pos ~ 0.3 to 0.45)
-          if (pos >= 0.28 && pos <= 0.45) {
-            sensorRingMat.color.setHex(0xf59e0b); // Trapping amber
-          } else if (pos > 0.45) {
-            sensorRingMat.color.setHex(0xef4444); // Breached red
-          }
+          // If bubble is in observation zone (-25 to -15)
+          const inObs = bubblePoint.x >= -24 && bubblePoint.x <= -16;
+          laserBeamMesh.visible = inObs;
+          targetSpotRing.visible = inObs;
         } else {
-          sensorRingMat.color.setHex(0x00f0ff);
+          laserBeamMesh.visible = false;
+          targetSpotRing.visible = false;
         }
       }
 
       if (isBubbleVisible) {
         bubbleMesh.visible = true;
-        bubbleMesh.position.copy(bubblePt);
+        bubbleMesh.position.copy(bubblePoint);
       } else {
         bubbleMesh.visible = false;
       }
 
-      // Smooth Camera Transitions on Preset change
-      const targetPreset = presetRef.current;
-      let targetCamPos = new THREE.Vector3(0, 24, 62);
-      let targetLookAt = new THREE.Vector3(0, 1.5, 0);
-
-      if (targetPreset === 'RESERVOIRS') {
-        targetCamPos = new THREE.Vector3(48, 18, 30);
-        targetLookAt = new THREE.Vector3(48, 6, 0);
-      } else if (targetPreset === 'BUBBLE_TRAP') {
-        targetCamPos = new THREE.Vector3(22, 14, 25);
-        targetLookAt = new THREE.Vector3(22, 2.5, 0);
-      } else if (targetPreset === 'ORGAN_ON_CHIP') {
-        targetCamPos = new THREE.Vector3(-5, 12, 26);
-        targetLookAt = new THREE.Vector3(-5, 2, 0);
-      } else if (targetPreset === 'SENSOR_MANIFOLD') {
-        targetCamPos = new THREE.Vector3(-28, 14, 26);
-        targetLookAt = new THREE.Vector3(-28, 4, 0);
-      } else if (targetPreset === 'INLET_OBSERVATION') {
-        targetCamPos = new THREE.Vector3(20, 12, 22);
-        targetLookAt = new THREE.Vector3(20, 2, 0);
-      }
-
-      camera.position.lerp(targetCamPos, 0.035);
-      controls.target.lerp(targetLookAt, 0.035);
+      // Smooth Camera Transition to preset
+      const preset = PRESETS[presetRef.current] || PRESETS.FULL_SYSTEM;
+      camera.position.lerp(preset.pos, 0.035);
+      controls.target.lerp(preset.target, 0.035);
       controls.update();
 
       renderer.render(scene, camera);
@@ -777,7 +1037,7 @@ export function DigitalTwinCanvas() {
   }, []);
 
   return (
-    <div className="relative w-full h-full min-h-[500px] overflow-hidden bg-[#070c16]">
+    <div className="relative w-full h-full min-h-[500px] overflow-hidden bg-[#0a1120]">
       <div ref={containerRef} className="w-full h-full min-h-[500px]" />
     </div>
   );

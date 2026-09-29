@@ -2,9 +2,8 @@
 
 /**
  * BioGuardian Telemetry Context & Provider Bridge
- * Provides seamless hot-swapping between:
- * 1. Hardware Digital Twin (ESP32 Real-Time WebSocket & Mock Telemetry)
- * 2. Virtual Lab Simulation (In-Silico Organ-on-Chip Experimentation)
+ * Provides seamless hot-swapping between MockTelemetryProvider (SIMULATION)
+ * and RealTelemetryProvider (REAL DEVICE WebSocket).
  */
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -17,25 +16,12 @@ import {
   InspectionTarget,
   ProviderMode,
   TelemetryContextValue,
-  TwinEnvironmentMode,
   ViewMode,
 } from './types';
 
 const TelemetryContext = createContext<TelemetryContextValue | null>(null);
 
-interface TelemetryProviderProps {
-  children: React.ReactNode;
-  initialEnvironmentMode?: TwinEnvironmentMode;
-}
-
-function TelemetryProviderInner({
-  children,
-  initialEnvironmentMode = 'HARDWARE_TWIN',
-}: TelemetryProviderProps) {
-  // Environment Mode (Live Twin vs Virtual Lab)
-  const [environmentMode, setEnvironmentMode] = useState<TwinEnvironmentMode>(initialEnvironmentMode);
-
-  // Hardware Twin Mode State
+function TelemetryProviderInner({ children }: { children: React.ReactNode }) {
   const [providerMode, setProviderMode] = useState<ProviderMode>('mock');
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>('FULL_SYSTEM');
   const [inspectionTarget, setInspectionTarget] = useState<InspectionTarget>(null);
@@ -63,80 +49,7 @@ function TelemetryProviderInner({
 
   const [status, setStatus] = useState<ConnectionStatus>('SIMULATION_ACTIVE');
 
-  // Virtual Lab Simulation State
-  const [virtualLabOrgan, setVirtualLabOrgan] = useState<string>('lung');
-  const [virtualLabParams, setVirtualLabParams] = useState<Record<string, number>>({
-    drug_concentration: 50,
-    exposure_duration: 24,
-    flow_rate: 450,
-    ph: 7.4,
-    oxygen: 6.5,
-    temperature: 37,
-  });
-  const [isSimulating, setIsSimulating] = useState<boolean>(false);
-  const [virtualLabElapsed, setVirtualLabElapsed] = useState<number>(0);
-  const [simulatedBubbleActive, setSimulatedBubbleActive] = useState<boolean>(false);
-  const [simulatedBubblePos, setSimulatedBubblePos] = useState<number>(0);
-
-  const simTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const bubbleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const setVirtualLabParam = (id: string, val: number) => {
-    setVirtualLabParams((prev) => ({ ...prev, [id]: val }));
-  };
-
-  const startSimulation = () => {
-    setIsSimulating(true);
-  };
-
-  const pauseSimulation = () => {
-    setIsSimulating(false);
-  };
-
-  const resetSimulation = () => {
-    setIsSimulating(false);
-    setVirtualLabElapsed(0);
-    setSimulatedBubbleActive(false);
-    setSimulatedBubblePos(0);
-  };
-
-  const injectSimulatedBubble = () => {
-    setSimulatedBubbleActive(true);
-    setSimulatedBubblePos(0);
-    if (!isSimulating) setIsSimulating(true);
-
-    if (bubbleTimerRef.current) clearInterval(bubbleTimerRef.current);
-    let p = 0;
-    bubbleTimerRef.current = setInterval(() => {
-      p += 0.02;
-      setSimulatedBubblePos(p);
-      if (p >= 1.0) {
-        clearInterval(bubbleTimerRef.current!);
-        bubbleTimerRef.current = null;
-        setSimulatedBubbleActive(false);
-        setSimulatedBubblePos(0);
-      }
-    }, 60);
-  };
-
-  // Virtual Lab Elapsed Timer
-  useEffect(() => {
-    if (isSimulating) {
-      simTimerRef.current = setInterval(() => {
-        setVirtualLabElapsed((e) => e + 1);
-      }, 1000);
-    } else {
-      if (simTimerRef.current) {
-        clearInterval(simTimerRef.current);
-        simTimerRef.current = null;
-      }
-    }
-    return () => {
-      if (simTimerRef.current) clearInterval(simTimerRef.current);
-    };
-  }, [isSimulating]);
-
-  // Initialize Hardware Providers
+  // Initialize providers
   useEffect(() => {
     mockProviderRef.current = new MockTelemetryProvider();
     realProviderRef.current = new RealTelemetryProvider();
@@ -147,7 +60,7 @@ function TelemetryProviderInner({
     };
   }, []);
 
-  // Subscribe to active Hardware provider
+  // Subscribe to active provider
   useEffect(() => {
     let unsubscribeTelemetry: (() => void) | undefined;
     let unsubscribeStatus: (() => void) | undefined;
@@ -235,17 +148,33 @@ function TelemetryProviderInner({
     }
   };
 
+  const backendUrl = useMemo(() => {
+    return (
+      realProviderRef.current?.getHttpBaseUrl() ||
+      (typeof process !== 'undefined'
+        ? process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '')
+        : undefined) ||
+      'http://localhost:8000'
+    );
+  }, []);
+
   const fetchLatestFromApi = async () => {
-    if (!realProviderRef.current) return;
     setIsApiFetching(true);
     setApiError(null);
     try {
-      const result = await realProviderRef.current.fetchLatest();
-      if (!result) {
-        setApiError('FastAPI unreachable or offline');
+      if (realProviderRef.current) {
+        const data = await realProviderRef.current.fetchLatest();
+        if (data) {
+          setTelemetry(data);
+          if (data.bubble_detected) {
+            setShowBubbleSpotVisual(true);
+          }
+        } else {
+          setApiError(`Could not reach backend API at ${realProviderRef.current.getHttpBaseUrl()}`);
+        }
       }
-    } catch (e) {
-      setApiError(String(e));
+    } catch (e: any) {
+      setApiError(e?.message || 'Error fetching from API');
     } finally {
       setIsApiFetching(false);
     }
@@ -257,8 +186,6 @@ function TelemetryProviderInner({
       status,
       providerMode,
       setProviderMode,
-      environmentMode,
-      setEnvironmentMode,
       triggerBubbleAlert,
       clearBubbleAlert,
       triggerBubbleSpot,
@@ -274,45 +201,31 @@ function TelemetryProviderInner({
       setInspectionTarget,
       viewMode,
       setViewMode,
-      backendUrl: realProviderRef.current?.getDeviceId() || 'http://localhost:8000',
-      virtualLabOrgan,
-      setVirtualLabOrgan,
-      virtualLabParams,
-      setVirtualLabParam,
-      isSimulating,
-      startSimulation,
-      pauseSimulation,
-      resetSimulation,
-      virtualLabElapsed,
-      simulatedBubbleActive,
-      simulatedBubblePos,
-      injectSimulatedBubble,
+      backendUrl,
     }),
     [
       telemetry,
       status,
       providerMode,
-      environmentMode,
       showBubbleSpotVisual,
       isApiFetching,
       apiError,
       cameraPreset,
       inspectionTarget,
       viewMode,
-      virtualLabOrgan,
-      virtualLabParams,
-      isSimulating,
-      virtualLabElapsed,
-      simulatedBubbleActive,
-      simulatedBubblePos,
+      backendUrl,
     ]
   );
 
   return <TelemetryContext.Provider value={value}>{children}</TelemetryContext.Provider>;
 }
 
-export function TelemetryProvider(props: TelemetryProviderProps) {
-  return <TelemetryProviderInner {...props} />;
+export function TelemetryProvider({ children }: { children: React.ReactNode }) {
+  const existing = useContext(TelemetryContext);
+  if (existing) {
+    return <>{children}</>;
+  }
+  return <TelemetryProviderInner>{children}</TelemetryProviderInner>;
 }
 
 export function useTelemetry(): TelemetryContextValue {

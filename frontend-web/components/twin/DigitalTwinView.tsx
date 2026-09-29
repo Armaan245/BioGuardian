@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * BioGuardian Complete 3D Digital Twin & Virtual Lab View
- * Unifies the WebGL 3D Canvas, SolarEye-inspired Glass HUD, and Telemetry / Virtual Lab Drawers.
+ * BioGuardian Complete 3D Digital Twin View
+ * Unifies the WebGL 3D Canvas, SolarEye-inspired Glass HUD, and Telemetry Drawers.
  */
 
 import React, { useState } from 'react';
@@ -10,19 +10,15 @@ import { DigitalTwinCanvas } from './DigitalTwinCanvas';
 import { DigitalTwinHUD } from './DigitalTwinHUD';
 import { DigitalTwinZoomControl } from './DigitalTwinZoomControl';
 import { TelemetryDrawers } from './TelemetryDrawers';
-import { TelemetryProvider, useTelemetry } from '@/lib/telemetry/TelemetryContext';
-import { TwinEnvironmentMode } from '@/lib/telemetry/types';
+import { TelemetryProvider } from '@/lib/telemetry/TelemetryContext';
 
 interface DigitalTwinViewProps {
   fullscreen?: boolean;
-  initialEnvironmentMode?: TwinEnvironmentMode;
 }
 
-function DigitalTwinViewContent({ fullscreen = false }: { fullscreen?: boolean }) {
-  const { environmentMode } = useTelemetry();
+function DigitalTwinViewContent({ fullscreen = false }: DigitalTwinViewProps) {
   const [telemetryDrawerOpen, setTelemetryDrawerOpen] = useState(false);
   const [bubbleDrawerOpen, setBubbleDrawerOpen] = useState(false);
-  const [virtualLabDrawerOpen, setVirtualLabDrawerOpen] = useState(environmentMode === 'VIRTUAL_LAB');
 
   return (
     <div
@@ -32,7 +28,7 @@ function DigitalTwinViewContent({ fullscreen = false }: { fullscreen?: boolean }
           : 'min-h-[600px] lg:min-h-[720px] rounded-3xl border border-teal/20 shadow-2xl'
       }`}
     >
-      {/* 1. 3D WebGL Canvas Layer (Accurate physical setup from CAD schematics) */}
+      {/* 1. 3D WebGL Canvas Layer */}
       <DigitalTwinCanvas />
 
       {/* 2. Floating Scientific HUD Layer */}
@@ -41,18 +37,14 @@ function DigitalTwinViewContent({ fullscreen = false }: { fullscreen?: boolean }
         setTelemetryDrawerOpen={setTelemetryDrawerOpen}
         bubbleDrawerOpen={bubbleDrawerOpen}
         setBubbleDrawerOpen={setBubbleDrawerOpen}
-        virtualLabDrawerOpen={virtualLabDrawerOpen}
-        setVirtualLabDrawerOpen={setVirtualLabDrawerOpen}
       />
 
-      {/* 3. Collapsible Glass Drawers (Live Telemetry, Bubble Trap, & Virtual Lab Deck) */}
+      {/* 3. Collapsible Glass Drawers */}
       <TelemetryDrawers
         telemetryDrawerOpen={telemetryDrawerOpen}
         setTelemetryDrawerOpen={setTelemetryDrawerOpen}
         bubbleDrawerOpen={bubbleDrawerOpen}
         setBubbleDrawerOpen={setBubbleDrawerOpen}
-        virtualLabDrawerOpen={virtualLabDrawerOpen}
-        setVirtualLabDrawerOpen={setVirtualLabDrawerOpen}
       />
 
       {/* 4. On-Screen Precision Smooth Zoom Controller */}
@@ -63,12 +55,9 @@ function DigitalTwinViewContent({ fullscreen = false }: { fullscreen?: boolean }
   );
 }
 
-export function DigitalTwinView({
-  fullscreen = false,
-  initialEnvironmentMode = 'HARDWARE_TWIN',
-}: DigitalTwinViewProps) {
+export function DigitalTwinView({ fullscreen = false }: DigitalTwinViewProps) {
   return (
-    <TelemetryProvider initialEnvironmentMode={initialEnvironmentMode}>
+    <TelemetryProvider>
       <DigitalTwinViewContent fullscreen={fullscreen} />
     </TelemetryProvider>
   );
