@@ -303,6 +303,7 @@ function TelemetryProviderInner({
       viewMode,
       setViewMode,
       backendUrl,
+      setTelemetry,
     }),
     [
       telemetry,
@@ -319,6 +320,7 @@ function TelemetryProviderInner({
       inspectionTarget,
       viewMode,
       backendUrl,
+      setTelemetry,
     ]
   );
 

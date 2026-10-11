@@ -95,14 +95,16 @@ function VirtualLabViewContent() {
 
   // Synchronize parameter panel adjustments into real-time telemetry
   useEffect(() => {
-    setTelemetry((prev) => ({
-      ...prev,
-      flow_rate: values.flow_rate ?? prev.flow_rate,
-      ph: values.ph ?? prev.ph,
-      temperature: values.temperature ?? prev.temperature,
-      oxygen: values.oxygen ?? prev.oxygen,
-      source: 'SIMULATION',
-    }));
+    if (typeof setTelemetry === 'function') {
+      setTelemetry((prev) => ({
+        ...prev,
+        flow_rate: values.flow_rate ?? prev.flow_rate,
+        ph: values.ph ?? prev.ph,
+        temperature: values.temperature ?? prev.temperature,
+        oxygen: values.oxygen ?? prev.oxygen,
+        source: 'SIMULATION',
+      }));
+    }
   }, [values.flow_rate, values.ph, values.temperature, values.oxygen, setTelemetry]);
 
   const [simStatus, setSimStatus] = useState<SimulationStatus>('idle');
@@ -197,7 +199,7 @@ function VirtualLabViewContent() {
   const handlePlay = async () => {
     setSimStatus('running');
     startTick();
-    setTelemetry((prev) => ({
+    setTelemetry?.((prev) => ({
       ...prev,
       flow_rate: values.flow_rate ?? 450,
       source: 'SIMULATION',
@@ -216,7 +218,7 @@ function VirtualLabViewContent() {
   const handlePause = () => {
     setSimStatus('paused');
     stopTick();
-    setTelemetry((prev) => ({
+    setTelemetry?.((prev) => ({
       ...prev,
       flow_rate: 0,
     }));
@@ -230,8 +232,8 @@ function VirtualLabViewContent() {
     setBubbleActive(false);
     setBubblePos(0);
     setSimState(null);
-    clearBubbleSpot();
-    setTelemetry((prev) => ({
+    clearBubbleSpot?.();
+    setTelemetry?.((prev) => ({
       ...prev,
       flow_rate: values.flow_rate ?? 450,
       bubble_detected: false,
@@ -246,8 +248,8 @@ function VirtualLabViewContent() {
     setBubblePos(0.05);
     setBubbleCount((c) => c + 1);
     setSimStatus('bubble');
-    triggerBubbleSpot(true);
-    setTelemetry((prev) => ({
+    triggerBubbleSpot?.(true);
+    setTelemetry?.((prev) => ({
       ...prev,
       bubble_detected: true,
       bubble_probability: 0.98,
@@ -262,8 +264,8 @@ function VirtualLabViewContent() {
         setBubbleActive(false);
         setBubblePos(0);
         setSimStatus('running');
-        clearBubbleSpot();
-        setTelemetry((prev) => ({
+        clearBubbleSpot?.();
+        setTelemetry?.((prev) => ({
           ...prev,
           bubble_detected: false,
           bubble_probability: 0.01,

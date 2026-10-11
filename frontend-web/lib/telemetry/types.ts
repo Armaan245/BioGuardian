@@ -75,4 +75,5 @@ export interface TelemetryContextValue {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   backendUrl: string;
+  setTelemetry: React.Dispatch<React.SetStateAction<BioGuardianTelemetry>>;
 }
