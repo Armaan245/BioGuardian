@@ -33,13 +33,16 @@ import {
   queryMLPredict,
 } from '@/lib/virtual-lab/api';
 
-import VirtualLabCanvas from './VirtualLabCanvas';
+import { DigitalTwinCanvas } from '@/components/twin/DigitalTwinCanvas';
+import { DigitalTwinZoomControl } from '@/components/twin/DigitalTwinZoomControl';
+import { TelemetryProvider, useTelemetry } from '@/lib/telemetry/TelemetryContext';
+import { CameraPreset } from '@/lib/telemetry/types';
 import OrganSelector from './OrganSelector';
 import ParameterPanel from './ParameterPanel';
 import SimulationControls from './SimulationControls';
 import SimulationCharts from './SimulationCharts';
 import ResultsPanel from './ResultsPanel';
-import { FlaskConical, ArrowLeft, Radio, Activity, Cpu, Sparkles } from 'lucide-react';
+import { FlaskConical, ArrowLeft, Radio, Activity, Cpu, Sparkles, Camera } from 'lucide-react';
 import Link from 'next/link';
 
 const CHART_HISTORY_MAX = 80;
@@ -62,7 +65,17 @@ const FALLBACK_PARAMS: ParameterSchema[] = [
   { id: 'temperature',        label: 'Medium Temperature', unit: '°C',    min: 30,  max: 42,   default: 37  },
 ];
 
-export default function VirtualLabView() {
+function VirtualLabViewContent() {
+  const {
+    telemetry,
+    setTelemetry,
+    cameraPreset,
+    setCameraPreset,
+    triggerBubbleSpot,
+    clearBubbleSpot,
+    setEnvironmentMode,
+  } = useTelemetry();
+
   const [organs, setOrgans] = useState<OrganProfile[]>(FALLBACK_ORGANS);
   const [selectedOrgan, setSelectedOrgan] = useState<string>('lung');
   const [params, setParams] = useState<ParameterSchema[]>(FALLBACK_PARAMS);
@@ -74,6 +87,23 @@ export default function VirtualLabView() {
     oxygen: 6.5,
     temperature: 37,
   });
+
+  // Ensure environment mode is set to VIRTUAL_LAB
+  useEffect(() => {
+    setEnvironmentMode('VIRTUAL_LAB');
+  }, [setEnvironmentMode]);
+
+  // Synchronize parameter panel adjustments into real-time telemetry
+  useEffect(() => {
+    setTelemetry((prev) => ({
+      ...prev,
+      flow_rate: values.flow_rate ?? prev.flow_rate,
+      ph: values.ph ?? prev.ph,
+      temperature: values.temperature ?? prev.temperature,
+      oxygen: values.oxygen ?? prev.oxygen,
+      source: 'SIMULATION',
+    }));
+  }, [values.flow_rate, values.ph, values.temperature, values.oxygen, setTelemetry]);
 
   const [simStatus, setSimStatus] = useState<SimulationStatus>('idle');
   const [elapsed, setElapsed] = useState<number>(0);
@@ -167,6 +197,11 @@ export default function VirtualLabView() {
   const handlePlay = async () => {
     setSimStatus('running');
     startTick();
+    setTelemetry((prev) => ({
+      ...prev,
+      flow_rate: values.flow_rate ?? 450,
+      source: 'SIMULATION',
+    }));
 
     try {
       const resp = await runSimulation(selectedOrgan, values);
@@ -181,6 +216,10 @@ export default function VirtualLabView() {
   const handlePause = () => {
     setSimStatus('paused');
     stopTick();
+    setTelemetry((prev) => ({
+      ...prev,
+      flow_rate: 0,
+    }));
   };
 
   const handleReset = () => {
@@ -191,6 +230,14 @@ export default function VirtualLabView() {
     setBubbleActive(false);
     setBubblePos(0);
     setSimState(null);
+    clearBubbleSpot();
+    setTelemetry((prev) => ({
+      ...prev,
+      flow_rate: values.flow_rate ?? 450,
+      bubble_detected: false,
+      bubble_probability: 0.01,
+      source: 'SIMULATION',
+    }));
   };
 
   // Inject bubble anomaly
@@ -199,6 +246,12 @@ export default function VirtualLabView() {
     setBubblePos(0.05);
     setBubbleCount((c) => c + 1);
     setSimStatus('bubble');
+    triggerBubbleSpot(true);
+    setTelemetry((prev) => ({
+      ...prev,
+      bubble_detected: true,
+      bubble_probability: 0.98,
+    }));
 
     let step = 0.05;
     const interval = setInterval(() => {
@@ -209,6 +262,12 @@ export default function VirtualLabView() {
         setBubbleActive(false);
         setBubblePos(0);
         setSimStatus('running');
+        clearBubbleSpot();
+        setTelemetry((prev) => ({
+          ...prev,
+          bubble_detected: false,
+          bubble_probability: 0.01,
+        }));
       }
     }, 120);
   };
@@ -331,14 +390,58 @@ export default function VirtualLabView() {
               />
             </div>
 
-            {/* 3D Photorealistic Microfluidic Engine Viewport */}
-            <VirtualLabCanvas
-              organId={selectedOrgan}
-              status={simStatus}
-              flowRate={values.flow_rate ?? 450}
-              bubblePosition={bubblePos}
-              bubbleActive={bubbleActive}
-            />
+            {/* 3D High-Fidelity Microfluidic Twin Engine Viewport */}
+            <div className="relative w-full h-[520px] lg:h-[580px] xl:h-[640px] rounded-3xl overflow-hidden border border-slate-800/90 bg-[#0b1528] shadow-2xl">
+              {/* Direct call to high-fidelity 3D Digital Twin Canvas */}
+              <DigitalTwinCanvas />
+
+              {/* Floating Viewport Overlay: Active Organ Tag */}
+              <div className="absolute top-3 left-4 pointer-events-none flex items-center gap-2 z-20">
+                <div className="bg-slate-950/85 backdrop-blur-md border border-slate-700/60 px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-teal-400 animate-pulse" />
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
+                    {selectedOrgan?.toUpperCase() || 'ORGAN-ON-A-CHIP'}
+                  </span>
+                  <span className="text-[10px] font-mono text-teal-400 border border-teal-800/50 bg-teal-950/60 px-1.5 py-0.5 rounded">
+                    {simStatus === 'paused' ? '0' : (values.flow_rate ?? 450)} µL/min
+                  </span>
+                </div>
+              </div>
+
+              {/* Floating Viewport Overlay: Camera Presets Bar */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/85 backdrop-blur-md border border-slate-800/90 p-1.5 rounded-2xl shadow-xl flex items-center gap-1 z-20 pointer-events-auto">
+                <div className="px-2 py-1 text-[10px] uppercase font-mono text-slate-400 flex items-center gap-1">
+                  <Camera className="size-3 text-teal-400" /> Views:
+                </div>
+                {(
+                  [
+                    ['FULL_SYSTEM', 'Full Rig'],
+                    ['RESERVOIRS', 'Bottles'],
+                    ['BUBBLE_TRAP', 'Y-Trap Chip'],
+                    ['INLET_OBSERVATION', 'Camera'],
+                    ['ORGAN_ON_CHIP', 'Organ Chip'],
+                    ['SENSOR_MANIFOLD', 'Manifold'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setCameraPreset(key as CameraPreset)}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-medium transition ${
+                      cameraPreset === key
+                        ? 'bg-teal-500 text-slate-950 font-bold shadow-md shadow-teal-500/30'
+                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Floating Viewport Overlay: Precision Smooth Zoom Controller */}
+              <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+                <DigitalTwinZoomControl />
+              </div>
+            </div>
 
             {/* Bottom Telemetry & Results Drawer */}
             <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4 shadow-xl backdrop-blur-sm">
@@ -392,5 +495,13 @@ export default function VirtualLabView() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VirtualLabView() {
+  return (
+    <TelemetryProvider initialEnvironmentMode="VIRTUAL_LAB">
+      <VirtualLabViewContent />
+    </TelemetryProvider>
   );
 }
