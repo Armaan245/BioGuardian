@@ -113,7 +113,8 @@ export default function VirtualLabCanvas({
 
     // 1. SCENE SETUP
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a1120);
+    scene.background = new THREE.Color(0x0b1528);
+    scene.fog = new THREE.FogExp2(0x0b1528, 0.005);
 
     const camera = new THREE.PerspectiveCamera(
       42,
@@ -128,9 +129,9 @@ export default function VirtualLabCanvas({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.38;
     container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -142,53 +143,85 @@ export default function VirtualLabCanvas({
     controls.target.set(-2, 0, 0);
     controlsRef.current = controls;
 
-    // 2. LIGHTING
-    const ambientLight = new THREE.AmbientLight(0xdbeafe, 1.25);
+    // 2. LABORATORY ILLUMINATION RIG (Luminous, crisp scientific lighting)
+    const ambientLight = new THREE.AmbientLight(0xe0f2fe, 2.2);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
-    keyLight.position.set(30, 45, 35);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 4.2);
+    keyLight.position.set(35, 55, 40);
     keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.8);
-    rimLight.position.set(-45, 20, -35);
+    const fillLight = new THREE.DirectionalLight(0x93c5fd, 2.2);
+    fillLight.position.set(-50, 40, 20);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 3.2);
+    rimLight.position.set(-45, 25, -45);
     scene.add(rimLight);
 
-    const inspectionLight = new THREE.PointLight(0x00f0ff, 2.5, 30);
-    inspectionLight.position.set(-12, 6, 0);
+    const underGlow = new THREE.PointLight(0x00f0ff, 2.8, 65);
+    underGlow.position.set(0, -2, 10);
+    scene.add(underGlow);
+
+    const inspectionLight = new THREE.PointLight(0x00f0ff, 3.5, 40);
+    inspectionLight.position.set(-12, 8, 2);
     scene.add(inspectionLight);
 
-    const chipAccentLight = new THREE.PointLight(0x38bdf8, 1.8, 35);
-    chipAccentLight.position.set(21, 8, 4);
+    const chipAccentLight = new THREE.PointLight(0x38bdf8, 3.0, 45);
+    chipAccentLight.position.set(21, 10, 6);
     scene.add(chipAccentLight);
 
-    // 3. OPTICAL BREADBOARD
+    // 3. OPTICAL BREADBOARD (Polished stainless steel / anodized lab workstation)
     const stageGeo = new THREE.BoxGeometry(160, 4.0, 70);
     const stageMat = new THREE.MeshStandardMaterial({
-      color: 0x111c30,
-      roughness: 0.35,
-      metalness: 0.85,
+      color: 0x24334f,
+      roughness: 0.28,
+      metalness: 0.78,
     });
     const stageMesh = new THREE.Mesh(stageGeo, stageMat);
     stageMesh.position.set(0, -4, 0);
     stageMesh.receiveShadow = true;
     scene.add(stageMesh);
 
-    const labGrid = new THREE.GridHelper(600, 60, 0x1e293b, 0x0f172a);
+    // Beveled luminous stage edge
+    const stageEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(stageGeo),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 })
+    );
+    stageMesh.add(stageEdges);
+
+    // Etched precision optical breadboard grid
+    const breadboardGrid = new THREE.GridHelper(150, 30, 0x00f0ff, 0x1e3a5f);
+    breadboardGrid.position.set(0, -1.95, 0);
+    breadboardGrid.material.opacity = 0.35;
+    breadboardGrid.material.transparent = true;
+    scene.add(breadboardGrid);
+
+    const labGrid = new THREE.GridHelper(600, 60, 0x334155, 0x1e293b);
     labGrid.position.y = -12.45;
     scene.add(labGrid);
 
     // 4. RESERVOIR BOTTLES (Media + Drug)
     const glassMat = new THREE.MeshPhysicalMaterial({
-      color: 0xf8fafc,
-      transmission: 0.94,
-      roughness: 0.06,
+      color: 0xf0fdfa,
+      transmission: 0.92,
+      roughness: 0.08,
+      metalness: 0.05,
+      ior: 1.52,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.78,
     });
-    const blueCapMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.3 });
-    const peekFittingMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85 });
+    const blueCapMat = new THREE.MeshStandardMaterial({
+      color: 0x2563eb,
+      roughness: 0.25,
+      metalness: 0.2,
+      emissive: 0x1d4ed8,
+      emissiveIntensity: 0.25,
+    });
+    const peekFittingMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.9, roughness: 0.15 });
 
     // Media Bottle
     const mediaBottle = new THREE.Group();
@@ -197,7 +230,14 @@ export default function VirtualLabCanvas({
     mediaBottle.children[0].position.y = 4.5;
     const mediaLiquid = new THREE.Mesh(
       new THREE.CylinderGeometry(3.3, 3.3, 6.5, 24),
-      new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, transmission: 0.75, transparent: true, opacity: 0.85 })
+      new THREE.MeshPhysicalMaterial({
+        color: 0xf43f5e,
+        emissive: 0xe11d48,
+        emissiveIntensity: 0.55,
+        transmission: 0.75,
+        transparent: true,
+        opacity: 0.88,
+      })
     );
     mediaLiquid.position.y = 3.3;
     mediaBottle.add(mediaLiquid);
@@ -213,7 +253,14 @@ export default function VirtualLabCanvas({
     drugBottle.children[0].position.y = 4.0;
     const drugLiquid = new THREE.Mesh(
       new THREE.CylinderGeometry(2.9, 2.9, 5.5, 24),
-      new THREE.MeshPhysicalMaterial({ color: 0x06b6d4, transmission: 0.8, transparent: true, opacity: 0.85 })
+      new THREE.MeshPhysicalMaterial({
+        color: 0x06b6d4,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.55,
+        transmission: 0.78,
+        transparent: true,
+        opacity: 0.88,
+      })
     );
     drugLiquid.position.y = 2.8;
     drugBottle.add(drugLiquid);
@@ -222,13 +269,13 @@ export default function VirtualLabCanvas({
     drugBottle.add(drugCap);
     scene.add(drugBottle);
 
-    // Feed tubing
+    // Feed tubing (Medical-grade clear FEP with luminous internal glow)
     const tubeMat = new THREE.MeshPhysicalMaterial({
-      color: 0xf8fafc,
-      transmission: 0.92,
-      roughness: 0.05,
+      color: 0xf1f5f9,
+      transmission: 0.82,
+      roughness: 0.12,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.72,
     });
     const createTubeCurve = (start: THREE.Vector3, mid: THREE.Vector3, end: THREE.Vector3) => {
       const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
@@ -246,27 +293,37 @@ export default function VirtualLabCanvas({
     // Bottom Glass Slide
     const yBottomGlass = new THREE.Mesh(
       new THREE.BoxGeometry(yChipWidth, 0.8, yChipDepth),
-      new THREE.MeshPhysicalMaterial({ color: 0xecfdf5, transmission: 0.95, roughness: 0.05, transparent: true, opacity: 0.75 })
+      new THREE.MeshPhysicalMaterial({ color: 0xecfdf5, transmission: 0.92, roughness: 0.06, transparent: true, opacity: 0.82 })
     );
     yBottomGlass.position.set(yChipCenterX, -1.6, 0);
     yChipGroup.add(yBottomGlass);
+    const yBottomEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(yBottomGlass.geometry),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 })
+    );
+    yBottomGlass.add(yBottomEdges);
 
-    // Middle PDMS Slab
+    // Middle PDMS Slab with Luminous Edges
     const yPdmsBody = new THREE.Mesh(
       new THREE.BoxGeometry(yChipWidth, 2.4, yChipDepth),
-      new THREE.MeshPhysicalMaterial({ color: 0xf0fdfa, transmission: 0.94, roughness: 0.08, transparent: true, opacity: 0.45 })
+      new THREE.MeshPhysicalMaterial({ color: 0xf0fdfa, transmission: 0.88, roughness: 0.1, transparent: true, opacity: 0.65 })
     );
     yPdmsBody.position.set(yChipCenterX, 0, 0);
+    const yPdmsEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(yPdmsBody.geometry),
+      new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.6 })
+    );
+    yPdmsBody.add(yPdmsEdges);
     yChipGroup.add(yPdmsBody);
 
     // Internal Cyan Channels
     const cyanMat = new THREE.MeshPhysicalMaterial({
       color: 0x00f0ff,
       emissive: 0x0284c7,
-      emissiveIntensity: 0.9,
-      transmission: 0.6,
+      emissiveIntensity: 1.1,
+      transmission: 0.55,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.95,
     });
     // Inlets
     const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 2.3, 20), cyanMat);
@@ -341,12 +398,15 @@ export default function VirtualLabCanvas({
     bridgeTube.position.set(-11.75, 0, 0);
     scene.add(bridgeTube);
 
-    // Camera Assembly
-    const camHousing = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 2.8, 6.5, 32), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 }));
+    // Camera Assembly (CNC Machined Aircraft Aluminum)
+    const camHousing = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.8, 2.8, 6.5, 32),
+      new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.88, roughness: 0.22 })
+    );
     camHousing.position.set(obsX, 8.5, 0);
     scene.add(camHousing);
 
-    const ledRingMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 1.5 });
+    const ledRingMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 2.0 });
     const ledRing = new THREE.Mesh(new THREE.TorusGeometry(1.9, 0.18, 16, 32), ledRingMat);
     ledRing.position.set(obsX, 5.4, 0);
     ledRing.rotation.x = Math.PI / 2;
@@ -377,20 +437,30 @@ export default function VirtualLabCanvas({
     const chipCenterX = 21.0;
     const oocGroup = new THREE.Group();
 
-    // Slide Base
+    // Slide Base with Edge Glow
     const oocSlide = new THREE.Mesh(
       new THREE.BoxGeometry(50, 1.2, 24),
-      new THREE.MeshPhysicalMaterial({ color: 0xecfdf5, transmission: 0.95, roughness: 0.04, transparent: true, opacity: 0.65 })
+      new THREE.MeshPhysicalMaterial({ color: 0xecfdf5, transmission: 0.92, roughness: 0.06, transparent: true, opacity: 0.75 })
     );
     oocSlide.position.set(chipCenterX, -3.3, 0);
+    const oocSlideEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(oocSlide.geometry),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 })
+    );
+    oocSlide.add(oocSlideEdges);
     oocGroup.add(oocSlide);
 
-    // PDMS Body
+    // PDMS Body with Chamfer Wireframe Glow
     const oocBody = new THREE.Mesh(
       new THREE.BoxGeometry(40, 5.4, 20),
-      new THREE.MeshPhysicalMaterial({ color: 0xf0fdfa, transmission: 0.97, roughness: 0.03, transparent: true, opacity: 0.42 })
+      new THREE.MeshPhysicalMaterial({ color: 0xf0fdfa, transmission: 0.92, roughness: 0.06, transparent: true, opacity: 0.55 })
     );
     oocBody.position.set(chipCenterX, 0, 0);
+    const oocBodyEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(oocBody.geometry),
+      new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.6 })
+    );
+    oocBody.add(oocBodyEdges);
     oocGroup.add(oocBody);
 
     // Membrane
@@ -406,9 +476,9 @@ export default function VirtualLabCanvas({
     const upperChMat = new THREE.MeshPhysicalMaterial({
       color: 0x38bdf8,
       emissive: 0x0284c7,
-      emissiveIntensity: 0.75,
+      emissiveIntensity: 0.95,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.92,
     });
     const upperMain = new THREE.Mesh(new THREE.BoxGeometry(24, 1.15, 2.6), upperChMat);
     upperMain.position.set(chipCenterX, 0.8, 0);
@@ -418,16 +488,16 @@ export default function VirtualLabCanvas({
     const lowerChMat = new THREE.MeshPhysicalMaterial({
       color: 0xf97316,
       emissive: 0xc2410c,
-      emissiveIntensity: 0.75,
+      emissiveIntensity: 0.95,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.92,
     });
     const lowerMain = new THREE.Mesh(new THREE.BoxGeometry(24, 1.15, 2.6), lowerChMat);
     lowerMain.position.set(chipCenterX, -0.8, 0);
     oocGroup.add(lowerMain);
 
     // Vacuum Side Chambers
-    const sideChamberMat = new THREE.MeshPhysicalMaterial({ color: 0x1e293b, transmission: 0.82, transparent: true, opacity: 0.45 });
+    const sideChamberMat = new THREE.MeshPhysicalMaterial({ color: 0x334155, transmission: 0.78, transparent: true, opacity: 0.55 });
     const scLeft = new THREE.Mesh(new THREE.BoxGeometry(22, 3.4, 2.2), sideChamberMat);
     scLeft.position.set(chipCenterX, 0, -4.8);
     oocGroup.add(scLeft);
@@ -437,10 +507,31 @@ export default function VirtualLabCanvas({
 
     scene.add(oocGroup);
 
-    // 8. DOWNSTREAM SENSOR MANIFOLD & WASTE
-    const manifold = new THREE.Mesh(new THREE.BoxGeometry(8, 7, 8), new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.88 }));
+    // 8. DOWNSTREAM SENSOR MANIFOLD & WASTE (CNC Medical Stainless Steel)
+    const manifoldMat = new THREE.MeshStandardMaterial({
+      color: 0xe2e8f0,
+      metalness: 0.92,
+      roughness: 0.18,
+    });
+    const manifold = new THREE.Mesh(new THREE.BoxGeometry(8, 7, 8), manifoldMat);
     manifold.position.set(50, 0.5, 0);
+    manifold.castShadow = true;
     scene.add(manifold);
+
+    // Sensor probe with status LED
+    const probeMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.4, 1.4, 7.5, 24),
+      new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.85, roughness: 0.2 })
+    );
+    probeMesh.position.set(50, 6.0, 0);
+    scene.add(probeMesh);
+
+    const probeLed = new THREE.Mesh(
+      new THREE.SphereGeometry(0.5, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 2.2 })
+    );
+    probeLed.position.set(50, 9.8, 0);
+    scene.add(probeLed);
 
     const wasteBeaker = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.2, 9, 32), glassMat);
     wasteBeaker.position.set(64, 2.5, 0);
@@ -558,7 +649,7 @@ export default function VirtualLabCanvas({
   }, []);
 
   return (
-    <div className="relative w-full h-[480px] lg:h-[540px] rounded-3xl overflow-hidden border border-slate-800/90 bg-[#0a1120] shadow-2xl">
+    <div className="relative w-full h-[520px] lg:h-[580px] xl:h-[640px] rounded-3xl overflow-hidden border border-slate-800/90 bg-[#080e1c] shadow-2xl">
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Floating Viewport Overlay: Active Organ Tag */}

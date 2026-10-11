@@ -209,7 +209,7 @@ export function DashboardShell() {
             <DigitalTwinView />
           </div>
         ) : active === 'Virtual Lab' ? (
-          <div className="mx-auto max-w-7xl p-5 lg:p-8">
+          <div className="w-full min-h-screen p-0">
             <VirtualLabView />
           </div>
         ) : (

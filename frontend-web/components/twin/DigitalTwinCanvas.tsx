@@ -62,7 +62,8 @@ export function DigitalTwinCanvas() {
     // 1. SCENE, CAMERA & WEBGL RENDERER SETUP
     // ==========================================
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a1120);
+    scene.background = new THREE.Color(0x0b1528);
+    scene.fog = new THREE.FogExp2(0x0b1528, 0.005);
 
     const camera = new THREE.PerspectiveCamera(
       42,
@@ -83,7 +84,7 @@ export function DigitalTwinCanvas() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.38;
     container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -95,29 +96,37 @@ export function DigitalTwinCanvas() {
     controls.target.set(-2, 0, 0);
 
     // ==========================================
-    // 2. LABORATORY ILLUMINATION RIG
+    // 2. LABORATORY ILLUMINATION RIG (Luminous, crisp scientific lighting)
     // ==========================================
-    const ambientLight = new THREE.AmbientLight(0xdbeafe, 1.25);
+    const ambientLight = new THREE.AmbientLight(0xe0f2fe, 2.2);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
-    keyLight.position.set(30, 45, 35);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 4.2);
+    keyLight.position.set(35, 55, 40);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 2048;
     keyLight.shadow.mapSize.height = 2048;
     keyLight.shadow.bias = -0.0001;
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.8);
-    rimLight.position.set(-45, 20, -35);
+    const fillLight = new THREE.DirectionalLight(0x93c5fd, 2.2);
+    fillLight.position.set(-50, 40, 20);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 3.2);
+    rimLight.position.set(-45, 25, -45);
     scene.add(rimLight);
 
-    const inspectionLight = new THREE.PointLight(0x00f0ff, 2.5, 30);
-    inspectionLight.position.set(-12, 6, 0);
+    const underGlow = new THREE.PointLight(0x00f0ff, 2.8, 65);
+    underGlow.position.set(0, -2, 10);
+    scene.add(underGlow);
+
+    const inspectionLight = new THREE.PointLight(0x00f0ff, 3.5, 40);
+    inspectionLight.position.set(-12, 8, 2);
     scene.add(inspectionLight);
 
-    const oocAccentLight = new THREE.PointLight(0x38bdf8, 1.8, 35);
-    oocAccentLight.position.set(21, 8, 4);
+    const oocAccentLight = new THREE.PointLight(0x38bdf8, 3.0, 45);
+    oocAccentLight.position.set(21, 10, 6);
     scene.add(oocAccentLight);
 
     // ==========================================
@@ -127,18 +136,32 @@ export function DigitalTwinCanvas() {
 
     const stageGeo = new THREE.BoxGeometry(160, 4.0, 70);
     const stageMat = new THREE.MeshStandardMaterial({
-      color: 0x111c30,
-      roughness: 0.35,
-      metalness: 0.85,
+      color: 0x24334f, // Lighter, metallic silver-blue optical breadboard
+      roughness: 0.28,
+      metalness: 0.78,
     });
     const stageMesh = new THREE.Mesh(stageGeo, stageMat);
     stageMesh.position.set(0, -4, 0);
     stageMesh.receiveShadow = true;
     stageGroup.add(stageMesh);
 
+    // Beveled stage edge highlight
+    const stageEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(stageGeo),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 })
+    );
+    stageMesh.add(stageEdges);
+
+    // Etched precision optical breadboard grid on top surface
+    const breadboardGrid = new THREE.GridHelper(150, 30, 0x00f0ff, 0x1e3a5f);
+    breadboardGrid.position.set(0, -1.95, 0);
+    breadboardGrid.material.opacity = 0.35;
+    breadboardGrid.material.transparent = true;
+    stageGroup.add(breadboardGrid);
+
     // Optical M6 mounting hole matrix on breadboard
     const holeGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.08, 12);
-    const holeMat = new THREE.MeshBasicMaterial({ color: 0x070b14 });
+    const holeMat = new THREE.MeshBasicMaterial({ color: 0x152238 });
     const holeInstanced = new THREE.InstancedMesh(holeGeo, holeMat, 280);
     const dummy = new THREE.Object3D();
     let holeIdx = 0;
@@ -157,7 +180,7 @@ export function DigitalTwinCanvas() {
     // Floor and isolation grid
     const floorGeo = new THREE.PlaneGeometry(800, 800);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x080f1e,
+      color: 0x0a1322,
       roughness: 0.5,
       metalness: 0.7,
     });
@@ -167,7 +190,7 @@ export function DigitalTwinCanvas() {
     floor.receiveShadow = true;
     stageGroup.add(floor);
 
-    const labGrid = new THREE.GridHelper(600, 60, 0x1e293b, 0x0f172a);
+    const labGrid = new THREE.GridHelper(600, 60, 0x334155, 0x1e293b);
     labGrid.position.y = -12.45;
     stageGroup.add(labGrid);
 
@@ -190,15 +213,17 @@ export function DigitalTwinCanvas() {
     });
 
     const blueCapMat = new THREE.MeshStandardMaterial({
-      color: 0x1d4ed8,
-      roughness: 0.3,
+      color: 0x2563eb,
+      roughness: 0.25,
       metalness: 0.2,
+      emissive: 0x1d4ed8,
+      emissiveIntensity: 0.25,
     });
 
     const peekFittingMat = new THREE.MeshStandardMaterial({
-      color: 0xe2e8f0,
-      metalness: 0.85,
-      roughness: 0.2,
+      color: 0xf1f5f9,
+      metalness: 0.9,
+      roughness: 0.15,
     });
 
     // A. Bottle 1: Cell Culture Media (DMEM / RPMI pink fluid)
@@ -216,10 +241,12 @@ export function DigitalTwinCanvas() {
       new THREE.CylinderGeometry(3.3, 3.3, 6.5, 24),
       new THREE.MeshPhysicalMaterial({
         color: 0xf43f5e,
+        emissive: 0xe11d48,
+        emissiveIntensity: 0.55,
         transmission: 0.75,
         roughness: 0.1,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.88,
       })
     );
     mediaLiquidMesh.position.y = 3.3;
@@ -256,10 +283,12 @@ export function DigitalTwinCanvas() {
       new THREE.CylinderGeometry(2.9, 2.9, 5.5, 24),
       new THREE.MeshPhysicalMaterial({
         color: 0x06b6d4,
-        transmission: 0.8,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.55,
+        transmission: 0.78,
         roughness: 0.1,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.88,
       })
     );
     drugLiquidMesh.position.y = 2.8;
@@ -281,13 +310,13 @@ export function DigitalTwinCanvas() {
 
     reservoirGroup.add(drugBottle);
 
-    // C. Dual Reservoir FEP Tubing to Y-Junction Inlets
+    // C. Dual Reservoir FEP Tubing to Y-Junction Inlets (Medical-grade clear FEP)
     const tubeMat = new THREE.MeshPhysicalMaterial({
-      color: 0xf8fafc,
-      transmission: 0.92,
-      roughness: 0.05,
+      color: 0xf1f5f9,
+      transmission: 0.82,
+      roughness: 0.12,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.72,
       ior: 1.45,
     });
 
@@ -341,28 +370,33 @@ export function DigitalTwinCanvas() {
     const yBottomGlassGeo = new THREE.BoxGeometry(yChipWidth, 0.8, yChipDepth);
     const yBottomGlassMat = new THREE.MeshPhysicalMaterial({
       color: 0xecfdf5,
-      transmission: 0.95,
-      roughness: 0.05,
+      transmission: 0.92,
+      roughness: 0.06,
       ior: 1.515,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.82,
       depthWrite: false,
     });
     const yBottomGlassMesh = new THREE.Mesh(yBottomGlassGeo, yBottomGlassMat);
     yBottomGlassMesh.position.set(yChipCenterX, -1.6, 0);
     yBottomGlassMesh.receiveShadow = true;
+    const yBottomGlassEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(yBottomGlassGeo),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 })
+    );
+    yBottomGlassMesh.add(yBottomGlassEdges);
     yChipGroup.add(yBottomGlassMesh);
 
-    // 2. Middle Layer: Optical Clear PDMS Body
+    // 2. Middle Layer: Optical Clear PDMS Body with Luminous Edge Wireframe
     const yPdmsBodyGeo = new THREE.BoxGeometry(yChipWidth, 2.4, yChipDepth);
     const yPdmsBodyMat = new THREE.MeshPhysicalMaterial({
       color: 0xf0fdfa,
-      transmission: 0.94,
-      roughness: 0.08,
-      metalness: 0.02,
+      transmission: 0.88,
+      roughness: 0.1,
+      metalness: 0.05,
       ior: 1.43,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.65,
       depthWrite: false,
     });
     const yPdmsBodyMesh = new THREE.Mesh(yPdmsBodyGeo, yPdmsBodyMat);
@@ -372,7 +406,7 @@ export function DigitalTwinCanvas() {
     // Beveled cyan chamfer wireframe on PDMS slab
     const yPdmsEdges = new THREE.LineSegments(
       new THREE.EdgesGeometry(yPdmsBodyGeo),
-      new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.4 })
+      new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.65 })
     );
     yPdmsBodyMesh.add(yPdmsEdges);
 
@@ -380,11 +414,11 @@ export function DigitalTwinCanvas() {
     const cyanChannelMat = new THREE.MeshPhysicalMaterial({
       color: 0x00f0ff,
       emissive: 0x0284c7,
-      emissiveIntensity: 0.9,
-      transmission: 0.6,
-      roughness: 0.08,
+      emissiveIntensity: 1.15,
+      transmission: 0.55,
+      roughness: 0.06,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.95,
     });
 
     const yChannelGroup = new THREE.Group();
@@ -539,12 +573,12 @@ export function DigitalTwinCanvas() {
     const obsZoneGroup = new THREE.Group();
     const obsX = -12.0;
 
-    // Optical Camera Head Assembly
+    // Optical Camera Head Assembly (CNC Aircraft Aluminum)
     const camHousingGeo = new THREE.CylinderGeometry(2.8, 2.8, 6.5, 32);
     const camHousingMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      metalness: 0.9,
-      roughness: 0.25,
+      color: 0x475569,
+      metalness: 0.88,
+      roughness: 0.22,
     });
     const cameraHousing = new THREE.Mesh(camHousingGeo, camHousingMat);
     cameraHousing.position.set(obsX, 8.5, 0);
@@ -555,7 +589,7 @@ export function DigitalTwinCanvas() {
     [-1.2, 0.4, 2.0].forEach((yOff) => {
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(2.85, 0.12, 16, 32),
-        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.35 })
+        new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.95, roughness: 0.25 })
       );
       ring.position.set(obsX, 8.5 + yOff, 0);
       ring.rotation.x = Math.PI / 2;
@@ -565,7 +599,7 @@ export function DigitalTwinCanvas() {
     // Optical C-Mount Objective Lens
     const lensFront = new THREE.Mesh(
       new THREE.CylinderGeometry(1.6, 2.2, 3.2, 32),
-      new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.95, roughness: 0.2 })
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.95, roughness: 0.2 })
     );
     lensFront.position.set(obsX, 3.6, 0);
     obsZoneGroup.add(lensFront);
@@ -716,17 +750,22 @@ export function DigitalTwinCanvas() {
     const slideBaseGeo = new THREE.BoxGeometry(chipWidth + 10, 1.2, chipDepth + 4);
     const slideBaseMat = new THREE.MeshPhysicalMaterial({
       color: 0xecfdf5,
-      transmission: 0.95,
-      roughness: 0.04,
+      transmission: 0.92,
+      roughness: 0.06,
       metalness: 0.08,
       ior: 1.515,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.78,
       depthWrite: false,
     });
     const slideBaseMesh = new THREE.Mesh(slideBaseGeo, slideBaseMat);
     slideBaseMesh.position.set(chipCenterX, -chipHeight / 2 - 0.6, 0);
     slideBaseMesh.receiveShadow = true;
+    const slideBaseEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(slideBaseGeo),
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 })
+    );
+    slideBaseMesh.add(slideBaseEdges);
     oocGroup.add(slideBaseMesh);
 
     // Frosted label area on slide edge
@@ -743,16 +782,16 @@ export function DigitalTwinCanvas() {
     frostedLabel.position.set(chipCenterX + chipWidth / 2 + 1.5, -chipHeight / 2 - 0.6, 0);
     oocGroup.add(frostedLabel);
 
-    // C. Optical PDMS Body
+    // C. Optical PDMS Body with Chamfer Wireframe Glow
     const chipBodyGeo = new THREE.BoxGeometry(chipWidth, chipHeight, chipDepth);
     const chipBodyMat = new THREE.MeshPhysicalMaterial({
       color: 0xf0fdfa,
-      transmission: 0.97,
-      roughness: 0.03,
+      transmission: 0.92,
+      roughness: 0.06,
       metalness: 0.02,
       ior: 1.43,
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.55,
       depthWrite: false,
     });
     const chipBodyMesh = new THREE.Mesh(chipBodyGeo, chipBodyMat);
@@ -762,7 +801,7 @@ export function DigitalTwinCanvas() {
 
     const chipEdges = new THREE.LineSegments(
       new THREE.EdgesGeometry(chipBodyGeo),
-      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 })
+      new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.65 })
     );
     chipBodyMesh.add(chipEdges);
 
@@ -964,12 +1003,12 @@ export function DigitalTwinCanvas() {
     drainTube.position.set(chipCenterX + chipWidth / 2 + 4.0, 0, 0);
     downstreamGroup.add(drainTube);
 
-    // Solid CNC Bronze / Gold Sensor Manifold Block
+    // Solid CNC Medical Stainless Steel Sensor Manifold Block
     const manifoldGeo = new THREE.BoxGeometry(8.0, 7.0, 8.0);
     const manifoldMat = new THREE.MeshStandardMaterial({
-      color: 0xd97706,
-      metalness: 0.88,
-      roughness: 0.22,
+      color: 0xe2e8f0,
+      metalness: 0.92,
+      roughness: 0.18,
     });
     const manifoldMesh = new THREE.Mesh(manifoldGeo, manifoldMat);
     manifoldMesh.position.set(50.0, 0.5, 0);
@@ -979,9 +1018,9 @@ export function DigitalTwinCanvas() {
     // Electrochemical Probe (pH / DO Sensor) inserted on top
     const probeGeo = new THREE.CylinderGeometry(1.4, 1.4, 7.5, 24);
     const probeMat = new THREE.MeshStandardMaterial({
-      color: 0x334155,
-      metalness: 0.8,
-      roughness: 0.25,
+      color: 0x64748b,
+      metalness: 0.85,
+      roughness: 0.2,
     });
     const probeMesh = new THREE.Mesh(probeGeo, probeMat);
     probeMesh.position.set(50.0, 6.0, 0);
@@ -989,11 +1028,11 @@ export function DigitalTwinCanvas() {
 
     // Sensor status indicator LED on manifold
     const probeLed = new THREE.Mesh(
-      new THREE.SphereGeometry(0.45, 16, 16),
+      new THREE.SphereGeometry(0.5, 16, 16),
       new THREE.MeshStandardMaterial({
         color: 0x10b981,
         emissive: 0x10b981,
-        emissiveIntensity: 2.0,
+        emissiveIntensity: 2.2,
       })
     );
     probeLed.position.set(50.0, 9.8, 0);
@@ -1314,7 +1353,61 @@ export function DigitalTwinCanvas() {
     });
     resizeObserver.observe(container);
 
+    // ==========================================
+    // 14. BIDIRECTIONAL ON-SCREEN ZOOM INTEGRATION
+    // Synchronizes with DigitalTwinZoomControl widget
+    // ==========================================
+    const dispatchCurrentZoom = () => {
+      const currentDist = camera.position.distanceTo(controls.target);
+      const level = 1 - (currentDist - controls.minDistance) / (controls.maxDistance - controls.minDistance);
+      window.dispatchEvent(
+        new CustomEvent('bioguardian:zoom_changed', {
+          detail: { level: Math.max(0, Math.min(1, level)) },
+        })
+      );
+    };
+
+    const handleSetZoomLevel = (e: Event) => {
+      const custom = e as CustomEvent<{ level: number }>;
+      if (typeof custom.detail?.level === 'number') {
+        isTransitioningPreset = false;
+        const level = Math.max(0, Math.min(1, custom.detail.level));
+        const targetDist = controls.maxDistance - level * (controls.maxDistance - controls.minDistance);
+        const dir = camera.position.clone().sub(controls.target).normalize();
+        camera.position.copy(controls.target).add(dir.multiplyScalar(targetDist));
+        controls.update();
+      }
+    };
+
+    const handleZoomStep = (e: Event) => {
+      const custom = e as CustomEvent<{ direction: 'in' | 'out'; amount?: number }>;
+      isTransitioningPreset = false;
+      const currentDist = camera.position.distanceTo(controls.target);
+      const factor = custom.detail?.direction === 'in' ? 0.78 : 1.28;
+      const newDist = Math.max(controls.minDistance, Math.min(controls.maxDistance, currentDist * factor));
+      const dir = camera.position.clone().sub(controls.target).normalize();
+      camera.position.copy(controls.target).add(dir.multiplyScalar(newDist));
+      controls.update();
+      dispatchCurrentZoom();
+    };
+
+    const handleResetZoom = () => {
+      triggerPresetTransition('FULL_SYSTEM');
+    };
+
+    window.addEventListener('bioguardian:set_zoom_level', handleSetZoomLevel);
+    window.addEventListener('bioguardian:zoom_step', handleZoomStep);
+    window.addEventListener('bioguardian:reset_zoom', handleResetZoom);
+    controls.addEventListener('change', dispatchCurrentZoom);
+
+    // Initial broadcast of zoom level after camera set
+    setTimeout(dispatchCurrentZoom, 80);
+
     return () => {
+      window.removeEventListener('bioguardian:set_zoom_level', handleSetZoomLevel);
+      window.removeEventListener('bioguardian:zoom_step', handleZoomStep);
+      window.removeEventListener('bioguardian:reset_zoom', handleResetZoom);
+      controls.removeEventListener('change', dispatchCurrentZoom);
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
@@ -1328,7 +1421,7 @@ export function DigitalTwinCanvas() {
   }, []);
 
   return (
-    <div className="relative w-full h-full flex-1 min-h-0 overflow-hidden bg-[#0a1120] select-none">
+    <div className="relative w-full h-full flex-1 min-h-0 overflow-hidden bg-[#0b1528] select-none">
       <div ref={containerRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
     </div>
   );

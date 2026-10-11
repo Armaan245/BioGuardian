@@ -288,11 +288,11 @@ export default function VirtualLabView() {
       </header>
 
       {/* 2. MAIN LABORATORY WORKSPACE */}
-      <div className="flex-1 p-3 lg:p-6 max-w-7xl mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <div className="flex-1 p-3 sm:p-4 lg:p-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
 
-          {/* LEFT CONTROL DECK (4 Cols on LG) */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* LEFT CONTROL DECK (Responsive column sizing) */}
+          <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3 space-y-4">
             {/* Organ Cartridge Selector */}
             <div className="rounded-3xl border border-slate-800/90 bg-slate-950/70 p-4 shadow-xl backdrop-blur-sm">
               <OrganSelector
@@ -316,8 +316,8 @@ export default function VirtualLabView() {
             </div>
           </div>
 
-          {/* RIGHT SIMULATION DECK (8 Cols on LG) */}
-          <div className="lg:col-span-8 space-y-4">
+          {/* RIGHT SIMULATION DECK (Expanded viewport width) */}
+          <div className="lg:col-span-8 xl:col-span-8 2xl:col-span-9 space-y-4">
 
             {/* Simulation Controller Action Bar */}
             <div className="rounded-2xl border border-slate-800/90 bg-slate-950/70 p-3 shadow-lg backdrop-blur-sm">
