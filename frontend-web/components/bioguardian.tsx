@@ -5,13 +5,50 @@ import { useState } from 'react'
 import { Activity, AlertOctagon, ArrowRight, Bell, Check, ChevronRight, CircleDot, FlaskConical, Gauge, Menu, Microscope, Radio, RotateCcw, ShieldCheck, SlidersHorizontal, Sparkles, Waves, Wifi, X, Zap } from 'lucide-react'
 import { useTelemetry } from '@/lib/telemetry/TelemetryContext'
 
-export const team = [
-  ['Armaan Mujawar', 'Artificial Intelligence and Data Science', 'AI / Data & Intelligence'],
-  ['Rehan Bagwan', 'Electrical and Computer Engineering', 'Embedded Systems / Software'],
-  ['Sumit Patil', 'Instrumentation and Control Engineering', 'Instrumentation / Control Systems'],
-  ['Sakshi Nilate', 'Instrumentation and Control Engineering', 'Instrumentation / Monitoring'],
-  ['Yahvii Bohra', 'Electronics and Telecommunication Engineering', 'Electronics / Hardware'],
-  ['Nisha Kachare', 'Chemical Engineering', 'Microfluidics / Biological Systems'],
+export interface TeamMember {
+  name: string
+  dept: string
+  role: string
+  linkedin: string
+}
+
+export const team: TeamMember[] = [
+  {
+    name: 'Armaan Mujawar',
+    dept: 'Artificial Intelligence and Data Science',
+    role: 'AI / Data & Intelligence',
+    linkedin: 'https://www.linkedin.com/in/araman-mujawar-8a33362b9/',
+  },
+  {
+    name: 'Rehan Bagwan',
+    dept: 'Electrical and Computer Engineering',
+    role: 'Embedded Systems / Software',
+    linkedin: 'https://www.linkedin.com/in/rehan-bagwan-ece28',
+  },
+  {
+    name: 'Sumit Patil',
+    dept: 'Instrumentation and Control Engineering',
+    role: 'Instrumentation / Control Systems',
+    linkedin: 'https://www.linkedin.com/in/sumit-patil-29721b2b3?utm_source=share_via&utm_content=profile&utm_medium=member_android',
+  },
+  {
+    name: 'Yahvi Bohra',
+    dept: 'Electronics and Telecommunication Engineering',
+    role: 'Electronics / Hardware',
+    linkedin: 'https://www.linkedin.com/in/yahvi-b-03b523325?utm_source=share_via&utm_content=profile&utm_medium=member_android',
+  },
+  {
+    name: 'Sakshi Nilate',
+    dept: 'Instrumentation and Control Engineering',
+    role: 'Instrumentation / Monitoring',
+    linkedin: 'https://www.linkedin.com/in/sakshi-nilate-072335390',
+  },
+  {
+    name: 'Anas Killedar',
+    dept: 'Electronics and Telecommunication Engineering',
+    role: 'Electronics & Telecommunication',
+    linkedin: 'https://www.linkedin.com/in/anas-killedar-4a82b6431?utm_source=share_via&utm_content=profile&utm_medium=member_android',
+  },
 ]
 
 export function Brand({ light = false }: { light?: boolean }) {
@@ -40,7 +77,57 @@ export function Twin({ dashboard = false }: { dashboard?: boolean }) { return <d
 
 export function DashboardPreview() { return <div className="rounded-3xl border border-border bg-white p-3 shadow-xl shadow-slate-200/60"><div className="flex items-center justify-between border-b border-border px-3 pb-3 text-xs"><span className="font-semibold">BioGuardian / Overview</span><span className="flex items-center gap-2 text-teal"><span className="size-2 rounded-full bg-teal" />Operational</span></div><div className="grid gap-3 p-2 sm:grid-cols-4"><Metric label="System health" value="98.4%" detail="+0.6% today" /><Metric label="Flow" value="96.8%" detail="Within range" /><Metric label="Pressure" value="98.1%" detail="Stable" /><Metric label="Active faults" value="1" detail="Being investigated" alert /></div><div className="grid gap-3 p-2 lg:grid-cols-[1.4fr_1fr]"><FlowVisual compact /><div className="rounded-2xl border border-border p-4"><div className="mb-4 text-sm font-semibold">Recent events</div>{['Bubble detected · Channel A2','Fault classified · Air bubble','Recovery verified · Channel A2'].map((x,i)=><div key={x} className="flex gap-3 border-t border-border py-3 text-xs"><span className="font-mono text-muted-foreground">09:{42-i*4}:2{i}</span><span>{x}</span></div>)}</div></div></div> }
 
-export function TeamGrid() { return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{team.map(([name,dept,role], i)=><div key={name} className="group rounded-2xl border border-border bg-white p-5 transition hover:-translate-y-1 hover:border-teal/50"><div className="mb-5 grid size-14 place-items-center rounded-full bg-teal-light text-lg font-semibold text-teal">{name.split(' ').map(x=>x[0]).join('')}</div><h3 className="font-semibold">{name}</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">{dept}</p><div className="mt-5 flex items-center justify-between border-t border-border pt-4 text-xs"><span>{role}</span><a href="#team" aria-label={`LinkedIn placeholder for ${name}`} className="text-teal hover:text-ink"><span className="text-xs font-semibold">in</span></a></div></div>)}</div> }
+export function TeamGrid() {
+  return (
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {team.map((member) => (
+        <div
+          key={member.name}
+          className="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-teal/50 hover:shadow-md"
+        >
+          <div>
+            <div className="mb-5 flex items-center justify-between">
+              <div className="grid size-13 place-items-center rounded-2xl bg-teal-light text-base font-bold text-teal shadow-inner">
+                {member.name.split(' ').map((x) => x[0]).join('')}
+              </div>
+              <a
+                href={member.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`LinkedIn profile of ${member.name}`}
+                className="flex items-center gap-1.5 rounded-full border border-teal/30 bg-teal/5 px-3 py-1.5 text-xs font-semibold text-teal transition hover:bg-teal hover:text-white"
+              >
+                <svg className="size-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                </svg>
+                <span>LinkedIn</span>
+              </a>
+            </div>
+            <h3 className="text-base font-semibold text-slate-900 group-hover:text-teal transition-colors">
+              {member.name}
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {member.dept}
+            </p>
+          </div>
+          <div className="mt-6 flex items-center justify-between border-t border-border pt-4 text-xs">
+            <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
+              {member.role}
+            </span>
+            <a
+              href={member.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-teal hover:underline inline-flex items-center gap-1"
+            >
+              View Profile &rarr;
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function DashboardShell() {
   const [active, setActive] = useState('Overview');
