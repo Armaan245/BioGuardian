@@ -4,30 +4,6 @@
 
 ---
 
-## 🏗️ System Architecture
-
-[ Sensor Simulation / Hardware ]
-├── Micro-Pressure (mbar)
-├── Micro-Flow (µL/min)
-├── IR Transmittance (mV)
-└── Temperature (°C)
-│
-▼
-[ Sliding Window Feature Extractor ]
-└── 2.0s Window / 0.2s Stride (6D Feature Vector)
-│
-├──► [ C++ Edge Inference Engine ] (100 ns Latency)
-│         └── MLP Classifier (model_data.h) -> BUBBLE_RISK Alert
-│
-└──► [ OpenCV Vision Pipeline ]
-└── Spatial Geometry Analysis (Diameter, Volume, Action)
-│
-▼
-[ JSON Telemetry Publisher ]
-└── MQTT / HTTP Stream
-
----
-
 ## 🚀 Key Features
 
 * **Dual-Modality Detection:** Integrates high-frequency 20 Hz time-series sensor fusion with optical computer vision.
