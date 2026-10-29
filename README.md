@@ -14,25 +14,6 @@
 
 ---
 
-## 📁 Repository Structure
-
-BioGuardian/
-├── software/
-│   ├── pi_zero/
-│   │   ├── simulate_sensor_data.py   # Synthetic 20Hz multi-sensor data generator
-│   │   ├── train_model.py            # Feature extraction & MLP training script
-│   │   ├── model_data.h              # Exported Z-score constants & model params
-│   │   ├── main.cpp                  # C++ edge inference engine entry point
-│   │   ├── run_cpp_engine.py         # Python runner for C++ parameter evaluation
-│   │   └── requirements.txt          # Python dependencies
-│   └── vision/
-│       ├── bubble_sizer.py           # OpenCV contour analyzer & volume calculator
-│       └── telemetry_publisher.py    # Unified telemetry JSON generator
-├── sensor_data_log.csv               # Generated 20Hz dataset (36,000 rows)
-└── README.md
-
----
-
 ## ⚙️ Quick Start Guide
 
 ### Prerequisites
